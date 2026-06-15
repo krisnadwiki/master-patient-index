@@ -2,6 +2,8 @@
 
 Aplikasi berbasis web untuk pencarian, pendaftaran, dan pembaruan data pasien pada platform SATUSEHAT Kementerian Kesehatan RI. Aplikasi ini dibangun menggunakan PHP Native (tanpa framework), HTML5, Bootstrap 5, dan JavaScript murni.
 
+![alt text](assets/img/register-umum.png)
+
 ## Fitur Utama
 
 1. **Pencarian Pasien (Cari Pasien by NIK)**
