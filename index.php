@@ -142,15 +142,9 @@ $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
 
             <div class="modal-footer">
                 <button type="button"
-                        class="btn btn-secondary rounded-1"
+                        class="btn btn-outline-primary rounded-1 px-4"
                         data-bs-dismiss="modal">
-                    Batal
-                </button>
-
-                <button type="button"
-                        class="btn btn-ss-primary rounded-1 px-4"
-                        id="btn-save-settings">
-                    Simpan Pengaturan
+                    Tutup
                 </button>
             </div>
 
@@ -160,8 +154,6 @@ $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
 
 <div class="container-fluid px-4 py-4">
     
-
-
     <div class="row">
         <!-- Kolom Kiri: Form -->
         <div class="col-xl-7 col-lg-6 mb-4">
