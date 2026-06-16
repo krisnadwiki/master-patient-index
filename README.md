@@ -2,23 +2,41 @@
 
 Aplikasi berbasis web untuk pencarian, pendaftaran, dan pembaruan data pasien pada platform SATUSEHAT Kementerian Kesehatan RI. Mendukung integrasi dengan **SIMGos** untuk pengambilan data pasien secara otomatis. Dibangun menggunakan PHP Native, HTML5, Bootstrap 5, dan JavaScript murni.
 
-## Fitur Utama
+## ✨ Fitur Utama
 
-1. **Pencarian Pasien** — Cari berdasarkan Identitas (NIK/Nama/Tgl Lahir/JK), Nomor IHS, atau NIK Ibu (Bayi). Hasil pencarian menampilkan data lengkap dan tombol **Update Identitas Pasien**.
+1. **Pencarian Pasien**
+   - Cari berdasarkan Identitas (NIK/Nama/Tgl Lahir/JK), Nomor IHS, atau NIK Ibu Kandung (Bayi).
+   - Hasil pencarian menampilkan data lengkap dan tombol **Update Identitas Pasien**.
 
-2. **Integrasi SIMGos** — Ambil data pasien dari SIMGos RS berdasarkan No. RM + Tanggal Lahir. Tersedia di tab Cari Pasien, Registrasi Umum, dan Registrasi Bayi dengan auto-fill cerdas.
+2. **Integrasi SIMGos**
+   - Ambil data pasien dari SIMGos berdasarkan No. RM dan Tanggal Lahir.
+   - Tersedia di tab Cari Pasien, Registrasi Umum, dan Registrasi Bayi.
+   - Mendukung fitur auto-fill untuk mempercepat proses registrasi.
 
-3. **Registrasi Pasien Umum** — Alur otomatis: cari berdasarkan NIK → jika sudah terdaftar tampilkan IHS → jika belum, buat pasien baru.
+3. **Registrasi Pasien Umum**
+   - Cari pasien berdasarkan NIK.
+   - Jika sudah terdaftar, sistem menampilkan Nomor IHS.
+   - Jika belum terdaftar, pasien akan diregistrasikan ke SATUSEHAT.
 
-4. **Registrasi Bayi Baru Lahir** — Formulir khusus menggunakan referensi NIK Ibu Kandung sesuai standar FHIR SATUSEHAT.
+4. **Registrasi Bayi Baru Lahir**
+   - Registrasi bayi menggunakan referensi NIK Ibu Kandung.
+   - Sesuai standar FHIR SATUSEHAT.
 
-5. **Update Data Pasien (PATCH)** — Perbarui data pasien dengan JSON Patch. Hanya field yang diisi yang dikirim ke SATUSEHAT.
+5. **Update Data Pasien (PATCH)**
+   - Memperbarui identitas pasien menggunakan JSON Patch.
+   - Hanya field yang diisi yang dikirim ke SATUSEHAT.
 
-6. **Master Data Wilayah** — Cascading dropdown Provinsi → Kab/Kota → Kecamatan → Kelurahan/Desa dengan pencarian TomSelect dan auto-pagination.
+6. **Master Data Wilayah**
+   - Cascading Provinsi → Kabupaten/Kota → Kecamatan → Kelurahan/Desa.
+   - Mendukung pencarian menggunakan TomSelect.
 
-7. **Kredensial Dinamis & Auto-Token** — Dukungan lingkungan Staging/Production dengan auto-generate token dari `.env`.
+7. **Kredensial Dinamis & Auto-Token**
+   - Mendukung environment Staging dan Production.
+   - Token SATUSEHAT dapat dihasilkan secara otomatis.
 
-8. **Human-Readable Response** — Respons API ditampilkan dalam format yang mudah dipahami dengan detail diagnostik jika terjadi kesalahan.
+8. **Human-Readable Response**
+   - Respons API ditampilkan dalam format yang mudah dipahami.
+   - Menyertakan informasi diagnostik jika terjadi kesalahan.
 
 ## Persyaratan Sistem
 
@@ -158,4 +176,4 @@ Tab Update terisi otomatis
 
 [SATUSEHAT Platform – Master Patient Index (MPI)](https://satusehat.kemkes.go.id/platform/docs/id/master-data/master-patient-index/preliminary/)
 
-> Spesifikasi SATUSEHAT dapat berubah sewaktu-waktu. Sesuaikan implementasi jika terdapat pembaruan dari Kementerian Kesehatan RI.
+> Dokumentasi SATUSEHAT dapat berubah sewaktu-waktu. Sesuaikan implementasi jika terdapat pembaruan dari Kementerian Kesehatan RI.
