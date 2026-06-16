@@ -8,6 +8,7 @@ $staging_id = getenv('STAGING_CLIENT_ID') ?: '';
 $staging_secret = getenv('STAGING_CLIENT_SECRET') ?: '';
 $prod_id = getenv('PRODUCTION_CLIENT_ID') ?: '';
 $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
+$url_simgos = getenv('URL_SIMGOS') ?: '';
 
 ?>
 <!DOCTYPE html>
@@ -29,6 +30,7 @@ $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
             Staging: { id: "<?= htmlspecialchars($staging_id) ?>", secret: "<?= htmlspecialchars($staging_secret) ?>" },
             Production: { id: "<?= htmlspecialchars($prod_id) ?>", secret: "<?= htmlspecialchars($prod_secret) ?>" }
         };
+        const defaultSimgosUrl = "<?= htmlspecialchars($url_simgos) ?>";
     </script>
 </head>
 <body class="bg-ss-light">
@@ -105,7 +107,7 @@ $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
                 </div>
 
                 <!-- Environment -->
-                <div class="mb-0">
+                <div class="mb-4">
                     <label class="form-label fw-medium">
                         Environment
                     </label>
@@ -136,6 +138,20 @@ $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
                             </label>
                         </div>
                     </div>
+                </div>
+
+                <!-- URL SIMGos -->
+                <div class="mb-0">
+                    <label for="url_simgos" class="form-label fw-medium">
+                        URL SIMGos <span class="text-muted fw-normal">(Opsional)</span>
+                    </label>
+
+                    <input type="text"
+                           id="url_simgos"
+                           class="form-control rounded-0"
+                           placeholder="https://..."
+                           autocomplete="off">
+                    <div class="form-text">Digunakan untuk fitur Update IHS Patient SIMGos.</div>
                 </div>
 
             </div>
@@ -659,10 +675,10 @@ $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
                                         <label for="p_marital" class="form-label fw-medium">Status Pernikahan Baru</label>
                                         <select class="form-select rounded-1" id="p_marital">
                                             <option value="">Tidak Diubah</option>
-                                            <option value="S">Single</option>
-                                            <option value="M">Married</option>
-                                            <option value="D">Divorced</option>
-                                            <option value="W">Widowed</option>
+                                            <option value="S">Belum Kawin</option>
+                                            <option value="M">Kawin</option>
+                                            <option value="D">Cerai Hidup</option>
+                                            <option value="W">Cerai Mati</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
@@ -759,6 +775,15 @@ $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
                     </div>
                     
                     <!-- Dynamic Content Will Be Injected Here by JS -->
+                </div>
+                
+                <!-- SIMGos Action Panel -->
+                <div class="card-footer bg-white border-top p-3 d-none" id="simgos-action-panel">
+                    <h6 class="fw-bold text-ss-primary mb-2" style="font-size: 0.85rem;"><i class="bi bi-link-45deg me-1"></i>Update Patient ke SIMGos</h6>
+                    <div class="d-flex gap-2">
+                        <a href="#" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill disabled" id="btn-simgos-ihs">Update by IHS</a>
+                        <a href="#" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill disabled" id="btn-simgos-nik">Update by NIK</a>
+                    </div>
                 </div>
             </div>
         </div>

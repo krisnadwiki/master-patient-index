@@ -50,6 +50,83 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function generatePatientCardHtml(res) {
+        let name = res.name && res.name.length > 0 ? res.name[0].text : '-';
+        let ihs = res.id || '-';
+        
+        let nik = '-';
+        let kk = '-';
+        if (res.identifier) {
+            const idNik = res.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
+            if (idNik) nik = idNik.value;
+            const idKk = res.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/kk");
+            if (idKk) kk = idKk.value;
+        }
+
+        let tgl = res.birthDate || '-';
+        let jk = res.gender || '-';
+        
+        let wn = '-';
+        if (res.extension) {
+            const extWn = res.extension.find(ext => ext.url === "https://fhir.kemkes.go.id/r4/StructureDefinition/citizenshipStatus");
+            if (extWn) wn = extWn.valueCode;
+        }
+
+        let tempat = '-';
+        if (res.extension) {
+            const extTempat = res.extension.find(ext => ext.url === "https://fhir.kemkes.go.id/r4/StructureDefinition/birthPlace");
+            if (extTempat && extTempat.valueAddress) tempat = extTempat.valueAddress.city;
+        }
+
+        let alamatStr = '-';
+        if (res.address && res.address.length > 0) {
+            let a = res.address[0];
+            alamatStr = a.line && a.line.length > 0 ? a.line.join(', ') : '';
+            if (a.city) alamatStr += (alamatStr ? ', ' : '') + a.city;
+            if (!alamatStr) alamatStr = '-';
+        }
+        
+        let marital = '-';
+        if (res.maritalStatus && res.maritalStatus.text) {
+            marital = res.maritalStatus.text;
+        }
+        
+        let active = typeof res.active !== 'undefined' ? (res.active ? 'Ya' : 'Tidak') : '-';
+        let deceased = typeof res.deceasedBoolean !== 'undefined' ? (res.deceasedBoolean ? 'Ya' : 'Tidak') : '-';
+        
+        let lastUpdated = '-';
+        if (res.meta && res.meta.lastUpdated) {
+            lastUpdated = new Date(res.meta.lastUpdated).toLocaleString('id-ID');
+        }
+
+        let infoItems = '';
+        if(nik !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>NIK:</strong> ${nik}</div>`;
+        if(kk !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>KK:</strong> ${kk}</div>`;
+        if(jk !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Jenis Kelamin:</strong> ${jk}</div>`;
+        if(tgl !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Tgl Lahir:</strong> ${tgl}</div>`;
+        if(tempat !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Tempat Lahir:</strong> ${tempat}</div>`;
+        if(wn !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Kewarganegaraan:</strong> ${wn}</div>`;
+        if(marital !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Status Pernikahan:</strong> ${marital}</div>`;
+        if(active !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Status Aktif:</strong> ${active}</div>`;
+        if(deceased !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Meninggal:</strong> ${deceased}</div>`;
+        if(lastUpdated !== '-') infoItems += `<div class="col-sm-6 mb-1"><strong>Terakhir Diperbarui:</strong> ${lastUpdated}</div>`;
+        if(alamatStr !== '-') infoItems += `<div class="col-sm-12 mt-2 pt-2 border-top"><strong>Alamat:</strong> ${alamatStr}</div>`;
+
+        return `
+            <div class="card border border-ss-primary mb-3 shadow-sm rounded-1">
+                <div class="card-header bg-light border-bottom border-ss-primary fw-bold d-flex justify-content-between align-items-center">
+                    <span class="text-ss-primary"><i class="bi bi-person-fill me-2"></i>${name}</span>
+                    <span class="badge bg-ss-primary text-white">IHS: ${ihs}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2 text-sm">
+                        ${infoItems}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     // --- Response Panel Logic ---
     function renderResponse(reqData, resData) {
         if (responseEmpty) responseEmpty.style.display = 'none';
@@ -59,21 +136,44 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let statusHtml = '';
         if (resData.isSuccess) {
-            let ihsHtml = resData.ihs ? `<div class="mb-2"><strong>IHS Number :</strong> <code>${resData.ihs}</code></div>` : '';
-            let existingAlert = (resData.raw && resData.raw.existing) 
-                ? `<div class="alert alert-warning py-2 mb-2 border-0"><i class="bi bi-info-circle-fill me-2"></i>${resData.raw.message}</div>` 
-                : '';
-            let titleText = (resData.raw && resData.raw.existing) ? 'Pasien Sudah Terdaftar' : 'Permintaan Berhasil';
+            let patientCardsHtml = '';
+            
+            if (reqData.type === 'Cari Pasien' && resData.raw.response && resData.raw.response.entry) {
+                resData.raw.response.entry.forEach((item) => {
+                    patientCardsHtml += generatePatientCardHtml(item.resource);
+                });
+                
+                statusHtml = `
+                    <div class="mb-3">
+                        <h6 class="text-ss-primary fw-bold mb-3"><i class="bi bi-search me-2"></i>Hasil Pencarian (Total: ${resData.raw.response?.total || 0})</h6>
+                        ${patientCardsHtml || '<div class="alert alert-warning border-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Pasien tidak ditemukan.</div>'}
+                    </div>
+                `;
+            } else {
+                let existingAlert = (resData.raw && resData.raw.existing) 
+                    ? `<div class="alert alert-warning py-2 mb-2 border-0"><i class="bi bi-info-circle-fill me-2"></i>${resData.raw.message}</div>` 
+                    : '';
+                let titleText = (resData.raw && resData.raw.existing) ? 'Pasien Sudah Terdaftar' : 'Permintaan Berhasil';
 
-            statusHtml = `
-                <div class="box-success mb-3">
-                    <h6 class="text-success fw-bold mb-3"><i class="bi bi-check-circle-fill me-2"></i>${titleText}</h6>
-                    ${existingAlert}
-                    ${ihsHtml}
-                    <div class="mb-1"><strong>Pesan :</strong> ${resData.message}</div>
-                    <div class="mb-1"><strong>Waktu Selesai :</strong> ${timestamp}</div>
-                </div>
-            `;
+                // Attempt to generate patient card if we have a resource
+                if (resData.raw.response) {
+                    if (resData.raw.response.resourceType === 'Patient') {
+                        patientCardsHtml = generatePatientCardHtml(resData.raw.response);
+                    } else if (resData.raw.response.entry && resData.raw.response.entry.length > 0) {
+                        patientCardsHtml = generatePatientCardHtml(resData.raw.response.entry[0].resource);
+                    }
+                }
+
+                statusHtml = `
+                    <div class="box-success mb-3">
+                        <h6 class="text-success fw-bold mb-3"><i class="bi bi-check-circle-fill me-2"></i>${titleText}</h6>
+                        ${existingAlert}
+                        ${patientCardsHtml}
+                        <div class="mb-1 mt-2"><strong>Pesan :</strong> ${resData.message}</div>
+                        <div class="mb-1"><strong>Waktu Selesai :</strong> ${timestamp}</div>
+                    </div>
+                `;
+            }
         } else {
             let diagnosticsHtml = '';
             
@@ -103,85 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             statusHtml = `
                 <div class="box-danger mb-3">
-                    <h6 class="text-danger fw-bold mb-3"><i class="bi bi-x-circle-fill me-2"></i>Registrasi gagal</h6>
+                    <h6 class="text-danger fw-bold mb-3"><i class="bi bi-x-circle-fill me-2"></i>Permintaan Gagal</h6>
                     <div class="mb-1"><strong>HTTP Code :</strong> ${resData.httpCode}</div>
                     <div class="mb-1"><strong>Pesan :</strong> ${resData.message}</div>
                     ${diagnosticsHtml}
-                </div>
-            `;
-        }
-
-        // Search Success special render
-        if (reqData.type === 'Cari Pasien' && resData.isSuccess) {
-            let rows = '';
-            if (resData.raw.response && resData.raw.response.entry) {
-                resData.raw.response.entry.forEach((item, i) => {
-                    let res = item.resource;
-                    let name = res.name && res.name.length > 0 ? res.name[0].text : '-';
-                    
-                    let ihs = res.id || '-';
-                    
-                    let nik = '-';
-                    if (res.identifier) {
-                        const idNik = res.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
-                        if (idNik) nik = idNik.value;
-                    }
-
-                    let tgl = res.birthDate || '-';
-                    let jk = res.gender || '-';
-                    
-                    let wn = '-';
-                    if (res.extension) {
-                        const extWn = res.extension.find(ext => ext.url === "https://fhir.kemkes.go.id/r4/StructureDefinition/citizenshipStatus");
-                        if (extWn) wn = extWn.valueCode;
-                    }
-
-                    let tempat = '-';
-                    if (res.extension) {
-                        const extTempat = res.extension.find(ext => ext.url === "https://fhir.kemkes.go.id/r4/StructureDefinition/birthPlace");
-                        if (extTempat && extTempat.valueAddress) tempat = extTempat.valueAddress.city;
-                    }
-
-                    let alamatStr = '-';
-                    if (res.address && res.address.length > 0) {
-                        let a = res.address[0];
-                        alamatStr = a.line && a.line.length > 0 ? a.line.join(', ') : '-';
-                        if (a.city) alamatStr += `, ${a.city}`;
-                    }
-                    
-                    let lastUpdated = '-';
-                    if (res.meta && res.meta.lastUpdated) {
-                        lastUpdated = new Date(res.meta.lastUpdated).toLocaleString('id-ID');
-                    }
-
-                    let infoItems = '';
-                    if(nik !== '-') infoItems += `<div class="col-sm-6"><strong>NIK:</strong> ${nik}</div>`;
-                    if(jk !== '-') infoItems += `<div class="col-sm-6"><strong>Jenis Kelamin:</strong> ${jk}</div>`;
-                    if(tgl !== '-') infoItems += `<div class="col-sm-6"><strong>Tgl Lahir:</strong> ${tgl}</div>`;
-                    if(tempat !== '-') infoItems += `<div class="col-sm-6"><strong>Tempat Lahir:</strong> ${tempat}</div>`;
-                    if(wn !== '-') infoItems += `<div class="col-sm-6"><strong>Kewarganegaraan:</strong> ${wn}</div>`;
-                    if(lastUpdated !== '-') infoItems += `<div class="col-sm-6"><strong>Terakhir Diperbarui:</strong> ${lastUpdated}</div>`;
-                    if(alamatStr !== '-') infoItems += `<div class="col-sm-12 mt-2 pt-2 border-top"><strong>Alamat:</strong> ${alamatStr}</div>`;
-
-                    rows += `
-                        <div class="card border border-ss-primary mb-3 shadow-sm rounded-1">
-                            <div class="card-header bg-light border-bottom border-ss-primary fw-bold d-flex justify-content-between align-items-center">
-                                <span class="text-ss-primary"><i class="bi bi-person-fill me-2"></i>${name}</span>
-                                <span class="badge bg-ss-primary text-white">IHS: ${ihs}</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-2 text-sm">
-                                    ${infoItems}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            statusHtml = `
-                <div class="mb-3">
-                    <h6 class="text-ss-primary fw-bold mb-3"><i class="bi bi-search me-2"></i>Hasil Pencarian (Total: ${resData.raw.response?.total || 0})</h6>
-                    ${rows || '<div class="alert alert-warning border-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Pasien tidak ditemukan.</div>'}
                 </div>
             `;
         }
@@ -197,8 +222,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </button>
                             </h2>
                             <div id="req-${accId}" class="accordion-collapse collapse" data-bs-parent="#acc-${accId}">
-                                <div class="accordion-body p-0">
-                                    <pre class="json-pre m-0"><code>${reqBodyString}</code></pre>
+                                <div class="accordion-body p-0 position-relative">
+                                    <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 copy-btn shadow-sm" data-clipboard-target="#req-code-${accId}" title="Copy Request JSON"><i class="bi bi-clipboard"></i></button>
+                                    <pre class="json-pre m-0"><code id="req-code-${accId}">${reqBodyString}</code></pre>
                                 </div>
                             </div>
                         </div>
@@ -239,8 +265,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </button>
                             </h2>
                             <div id="col-${accId}" class="accordion-collapse collapse" data-bs-parent="#acc-${accId}">
-                                <div class="accordion-body p-0">
-                                    <pre class="json-pre m-0"><code>${rawJsonString}</code></pre>
+                                <div class="accordion-body p-0 position-relative">
+                                    <button class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 copy-btn shadow-sm" data-clipboard-target="#res-code-${accId}" title="Copy Response JSON"><i class="bi bi-clipboard"></i></button>
+                                    <pre class="json-pre m-0"><code id="res-code-${accId}">${rawJsonString}</code></pre>
                                 </div>
                             </div>
                         </div>
@@ -250,6 +277,65 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         responseContent.innerHTML = cardHtml; // Replace existing
+
+        // SIMGos Logic
+        const simgosPanel = document.getElementById('simgos-action-panel');
+        const btnSimgosIhs = document.getElementById('btn-simgos-ihs');
+        const btnSimgosNik = document.getElementById('btn-simgos-nik');
+        
+        if (simgosPanel) {
+            simgosPanel.classList.add('d-none');
+            btnSimgosIhs.classList.add('disabled');
+            btnSimgosIhs.removeAttribute('href');
+            btnSimgosNik.classList.add('disabled');
+            btnSimgosNik.removeAttribute('href');
+
+            const urlSimgosInput = document.getElementById('url_simgos');
+            const simgosBaseUrl = urlSimgosInput ? urlSimgosInput.value.trim() : '';
+
+            if (resData.isSuccess && simgosBaseUrl) {
+                let extractedIhs = resData.ihs || resData.raw.id || null;
+                let extractedNik = null;
+                
+                if (resData.raw.response) {
+                    if (resData.raw.response.entry && resData.raw.response.entry.length > 0) {
+                        const firstRes = resData.raw.response.entry[0].resource;
+                        if (!extractedIhs) extractedIhs = firstRes.id;
+                        if (firstRes.identifier) {
+                            const nikId = firstRes.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
+                            if (nikId) extractedNik = nikId.value;
+                        }
+                    } else if (resData.raw.response.resourceType === 'Patient') {
+                        const res = resData.raw.response;
+                        if (!extractedIhs) extractedIhs = res.id;
+                        if (res.identifier) {
+                            const nikId = res.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
+                            if (nikId) extractedNik = nikId.value;
+                        }
+                    }
+                }
+
+                // Validasi NIK: Hanya 16 digit angka (abaikan masking ################)
+                let isNikValid = false;
+                if (extractedNik && /^\d{16}$/.test(extractedNik)) {
+                    isNikValid = true;
+                }
+
+                if (extractedIhs || isNikValid) {
+                    simgosPanel.classList.remove('d-none');
+                    
+                    if (extractedIhs) {
+                        btnSimgosIhs.href = `${simgosBaseUrl}/webservice/kemkes/ihs/patient?id=${extractedIhs}`;
+                        btnSimgosIhs.classList.remove('disabled');
+                    }
+                    
+                    if (isNikValid) {
+                        btnSimgosNik.href = `${simgosBaseUrl}/webservice/kemkes/ihs/patient?nik=${extractedNik}`;
+                        btnSimgosNik.classList.remove('disabled');
+                    }
+                }
+            }
+        }
     }
 
 
@@ -276,6 +362,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     applyEnv();
+    
+    // Init URL SIMGos from .env default
+    const urlSimgosInput = document.getElementById('url_simgos');
+    if (urlSimgosInput && typeof defaultSimgosUrl !== 'undefined') {
+        urlSimgosInput.value = defaultSimgosUrl;
+    }
 
     // --- Clear Form ---
     let clearFormModalInstance = null;
@@ -744,5 +836,23 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-generate').click();
         }
     }, 500);
+
+    // --- Global Clipboard Logic ---
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.copy-btn');
+        if (btn) {
+            const targetId = btn.getAttribute('data-clipboard-target');
+            const el = document.querySelector(targetId);
+            if (el) {
+                navigator.clipboard.writeText(el.innerText).then(() => {
+                    const originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
+                    setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            }
+        }
+    });
 
 });
