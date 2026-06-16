@@ -67,7 +67,11 @@ do {
     if ($http_code == 200 && isset($result['data'])) {
         $all_data = array_merge($all_data, $result['data']);
         if (isset($result['meta']['page']['total_page'])) {
-            $total_page = (int)$result['meta']['page']['total_page'];
+            // $total_page = (int)$result['meta']['page']['total_page'];
+            $total_page = (int) ceil(
+                $result['meta']['page']['total'] /
+                $result['meta']['page']['limit']
+            );
         } else {
             $total_page = 1;
         }

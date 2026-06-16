@@ -181,7 +181,7 @@ function satusehat_patch_patient($access_token, $ihs_number, $patch_payload, $en
     }
 }
 
-function satusehat_get_patient_by_id($access_token, $ihs_number, $env) {
+function satusehat_search_patient_by_id($access_token, $ihs_number, $env) {
     $base_url = get_base_url($env);
     $url = $base_url . '/fhir-r4/v1/Patient/' . urlencode($ihs_number);
 
@@ -218,6 +218,106 @@ function satusehat_get_patient_by_id($access_token, $ihs_number, $env) {
         return ['success' => true, 'response' => $result];
     } else {
         write_log("[X] GET PATIENT FAILED. HTTP " . $http_code . "\n" . $response);
+        return ['success' => false, 'status' => $http_code, 'response' => $response];
+    }
+}
+
+function satusehat_search_patient_bayi($access_token, $nik_ibu, $birthdate, $env) {
+    $base_url = get_base_url($env);
+    $url = $base_url . '/fhir-r4/v1/Patient?identifier=https%3A%2F%2Ffhir.kemkes.go.id%2Fid%2Fnik-ibu%7C' . urlencode($nik_ibu) . '&birthdate=' . urlencode($birthdate);
+
+    $ch = curl_init();
+    curl_setopt_array($ch, array(
+      CURLOPT_URL => $url,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'GET',
+      CURLOPT_HTTPHEADER => array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $access_token
+      ),
+    ));
+
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        write_log("[!] Error: cURL Error (Search Bayi): " . $error);
+        return ['success' => false, 'error' => $error];
+    }
+
+    $result = json_decode($response, true);
+
+    if ($http_code == 200) {
+        write_log("     ✓ SEARCH BAYI SUCCESS ✓");
+        $total = isset($result['total']) ? $result['total'] : 0;
+        return ['success' => true, 'total' => $total, 'response' => $result];
+    } else {
+        write_log("[X] SEARCH BAYI FAILED. HTTP " . $http_code . "\n" . $response);
+        return ['success' => false, 'status' => $http_code, 'response' => $response];
+    }
+}
+
+function satusehat_search_patient_identitas($access_token, $nik, $name, $birthdate, $gender, $env) {
+    $base_url = get_base_url($env);
+    
+    // Construct Query String dynamically based on inputs
+    $query_params = [];
+    if (!empty($nik)) {
+        $query_params[] = 'identifier=https%3A%2F%2Ffhir.kemkes.go.id%2Fid%2Fnik%7C' . urlencode($nik);
+    }
+    if (!empty($name)) {
+        $query_params[] = 'name=' . rawurlencode($name);
+    }
+    if (!empty($birthdate)) {
+        $query_params[] = 'birthdate=' . urlencode($birthdate);
+    }
+    if (!empty($gender)) {
+        $query_params[] = 'gender=' . urlencode($gender);
+    }
+
+    $url = $base_url . '/fhir-r4/v1/Patient?' . implode('&', $query_params);
+
+    $ch = curl_init();
+    curl_setopt_array($ch, array(
+      CURLOPT_URL => $url,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_ENCODING => '',
+      CURLOPT_MAXREDIRS => 10,
+      CURLOPT_TIMEOUT => 0,
+      CURLOPT_FOLLOWLOCATION => true,
+      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+      CURLOPT_CUSTOMREQUEST => 'GET',
+      CURLOPT_HTTPHEADER => array(
+        'Content-Type: application/json',
+        'Authorization: Bearer ' . $access_token
+      ),
+    ));
+
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        write_log("[!] Error: cURL Error (Search Identitas): " . $error);
+        return ['success' => false, 'error' => $error];
+    }
+
+    $result = json_decode($response, true);
+
+    if ($http_code == 200) {
+        write_log("     ✓ SEARCH IDENTITAS SUCCESS ✓");
+        $total = isset($result['total']) ? $result['total'] : 0;
+        return ['success' => true, 'total' => $total, 'response' => $result];
+    } else {
+        write_log("[X] SEARCH IDENTITAS FAILED. HTTP " . $http_code . "\n" . $response);
         return ['success' => false, 'status' => $http_code, 'response' => $response];
     }
 }

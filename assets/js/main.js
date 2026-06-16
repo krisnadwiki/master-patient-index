@@ -118,22 +118,97 @@ document.addEventListener('DOMContentLoaded', () => {
                 resData.raw.response.entry.forEach((item, i) => {
                     let res = item.resource;
                     let name = res.name && res.name.length > 0 ? res.name[0].text : '-';
-                    rows += `<tr><td>${i+1}</td><td>${name}</td><td><code>${res.id}</code></td></tr>`;
+                    
+                    let ihs = res.id || '-';
+                    
+                    let nik = '-';
+                    if (res.identifier) {
+                        const idNik = res.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
+                        if (idNik) nik = idNik.value;
+                    }
+
+                    let tgl = res.birthDate || '-';
+                    let jk = res.gender || '-';
+                    
+                    let wn = '-';
+                    if (res.extension) {
+                        const extWn = res.extension.find(ext => ext.url === "https://fhir.kemkes.go.id/r4/StructureDefinition/citizenshipStatus");
+                        if (extWn) wn = extWn.valueCode;
+                    }
+
+                    let tempat = '-';
+                    if (res.extension) {
+                        const extTempat = res.extension.find(ext => ext.url === "https://fhir.kemkes.go.id/r4/StructureDefinition/birthPlace");
+                        if (extTempat && extTempat.valueAddress) tempat = extTempat.valueAddress.city;
+                    }
+
+                    let alamatStr = '-';
+                    if (res.address && res.address.length > 0) {
+                        let a = res.address[0];
+                        alamatStr = a.line && a.line.length > 0 ? a.line.join(', ') : '-';
+                        if (a.city) alamatStr += `, ${a.city}`;
+                    }
+                    
+                    let lastUpdated = '-';
+                    if (res.meta && res.meta.lastUpdated) {
+                        lastUpdated = new Date(res.meta.lastUpdated).toLocaleString('id-ID');
+                    }
+
+                    let infoItems = '';
+                    if(nik !== '-') infoItems += `<div class="col-sm-6"><strong>NIK:</strong> ${nik}</div>`;
+                    if(jk !== '-') infoItems += `<div class="col-sm-6"><strong>Jenis Kelamin:</strong> ${jk}</div>`;
+                    if(tgl !== '-') infoItems += `<div class="col-sm-6"><strong>Tgl Lahir:</strong> ${tgl}</div>`;
+                    if(tempat !== '-') infoItems += `<div class="col-sm-6"><strong>Tempat Lahir:</strong> ${tempat}</div>`;
+                    if(wn !== '-') infoItems += `<div class="col-sm-6"><strong>Kewarganegaraan:</strong> ${wn}</div>`;
+                    if(lastUpdated !== '-') infoItems += `<div class="col-sm-6"><strong>Terakhir Diperbarui:</strong> ${lastUpdated}</div>`;
+                    if(alamatStr !== '-') infoItems += `<div class="col-sm-12 mt-2 pt-2 border-top"><strong>Alamat:</strong> ${alamatStr}</div>`;
+
+                    rows += `
+                        <div class="card border border-ss-primary mb-3 shadow-sm rounded-1">
+                            <div class="card-header bg-light border-bottom border-ss-primary fw-bold d-flex justify-content-between align-items-center">
+                                <span class="text-ss-primary"><i class="bi bi-person-fill me-2"></i>${name}</span>
+                                <span class="badge bg-ss-primary text-white">IHS: ${ihs}</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-2 text-sm">
+                                    ${infoItems}
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 });
             }
             statusHtml = `
-                <div class="box-info mb-3">
-                    <h6 class="text-primary fw-bold mb-3"><i class="bi bi-info-circle-fill me-2"></i>Pencarian Selesai</h6>
-                    <div class="mb-2"><strong>Total Ditemukan :</strong> ${resData.raw.response?.total || 0}</div>
-                    <table class="table table-bordered table-diagnostics mb-0">
-                        <thead><tr><th>No</th><th>Nama Pasien</th><th>ID IHS</th></tr></thead>
-                        <tbody>${rows || '<tr><td colspan="3" class="text-center">Citizen Not Exists</td></tr>'}</tbody>
-                    </table>
+                <div class="mb-3">
+                    <h6 class="text-ss-primary fw-bold mb-3"><i class="bi bi-search me-2"></i>Hasil Pencarian (Total: ${resData.raw.response?.total || 0})</h6>
+                    ${rows || '<div class="alert alert-warning border-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Pasien tidak ditemukan.</div>'}
                 </div>
             `;
         }
 
-        const rawJsonString = JSON.stringify(resData.raw || {}, null, 2);
+        let requestBodyHtml = '';
+        if (resData.raw && resData.raw.request_body) {
+            const reqBodyString = JSON.stringify(resData.raw.request_body, null, 2);
+            requestBodyHtml = `
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#req-${accId}">
+                                    <i class="bi bi-file-earmark-code me-2"></i> Lihat Request Body JSON
+                                </button>
+                            </h2>
+                            <div id="req-${accId}" class="accordion-collapse collapse" data-bs-parent="#acc-${accId}">
+                                <div class="accordion-body p-0">
+                                    <pre class="json-pre m-0"><code>${reqBodyString}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+            `;
+        }
+
+        // To make the response JSON cleaner, we can optionally remove request_body from it before stringifying
+        let rawResponse = { ...resData.raw };
+        if (rawResponse.request_body) delete rawResponse.request_body;
+        const rawJsonString = JSON.stringify(rawResponse, null, 2);
 
         const cardHtml = `
             <div class="res-card mb-3">
@@ -156,6 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${statusHtml}
 
                     <div class="accordion accordion-flush mt-3 border" id="acc-${accId}">
+                        ${requestBodyHtml}
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#col-${accId}">
@@ -202,27 +278,44 @@ document.addEventListener('DOMContentLoaded', () => {
     applyEnv();
 
     // --- Clear Form ---
+    let clearFormModalInstance = null;
+    const clearFormModalEl = document.getElementById('clearFormModal');
+    if (clearFormModalEl) {
+        clearFormModalInstance = new bootstrap.Modal(clearFormModalEl);
+    }
+
     document.querySelectorAll('.btn-clear').forEach(btn => {
         btn.addEventListener('click', () => {
-            if(confirm('Bersihkan semua input pada form?')) {
-                document.getElementById('form-umum').reset();
-                document.getElementById('form-bayi').reset();
-                document.getElementById('form-search').reset();
-                if(document.getElementById('form-patch')) document.getElementById('form-patch').reset();
-                
-                // Sync TomSelect instances
-                for (let id in tsInstances) {
-                    if (tsInstances[id]) {
-                        tsInstances[id].clear(true);
-                    }
-                }
-                
-                if (responseEmpty) responseEmpty.style.display = 'block';
-                responseContent.innerHTML = '';
-                responseContent.appendChild(responseEmpty);
+            if (clearFormModalInstance) {
+                clearFormModalInstance.show();
             }
         });
     });
+
+    const btnConfirmClear = document.getElementById('btn-confirm-clear');
+    if (btnConfirmClear) {
+        btnConfirmClear.addEventListener('click', () => {
+            document.getElementById('form-umum').reset();
+            document.getElementById('form-bayi').reset();
+            document.getElementById('form-search').reset();
+            if(document.getElementById('form-patch')) document.getElementById('form-patch').reset();
+            
+            // Sync TomSelect instances
+            for (let id in tsInstances) {
+                if (tsInstances[id]) {
+                    tsInstances[id].clear(true);
+                }
+            }
+            
+            if (responseEmpty) responseEmpty.style.display = 'block';
+            responseContent.innerHTML = '';
+            responseContent.appendChild(responseEmpty);
+            
+            if (clearFormModalInstance) {
+                clearFormModalInstance.hide();
+            }
+        });
+    }
 
     // --- Generate Token ---
     let currentAccessToken = '';
@@ -353,23 +446,96 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Search Patient Logic ---
+    const radioTypes = document.querySelectorAll('input[name="search_type"]');
+    const fieldsIdentitas = document.getElementById('search-fields-identitas');
+    const fieldsIhs = document.getElementById('search-fields-ihs');
+    const fieldsBayi = document.getElementById('search-fields-bayi');
+
+    function toggleSearchFields() {
+        const selectedType = document.querySelector('input[name="search_type"]:checked')?.value;
+        
+        if (fieldsIdentitas) fieldsIdentitas.classList.add('d-none');
+        if (fieldsIhs) fieldsIhs.classList.add('d-none');
+        if (fieldsBayi) fieldsBayi.classList.add('d-none');
+
+        // remove required
+        document.getElementById('s_nik').required = false;
+        document.getElementById('s_nama').required = false;
+        document.getElementById('s_tgl').required = false;
+        document.getElementById('s_jk').required = false;
+        document.getElementById('s_ihs').required = false;
+        document.getElementById('s_nik_ibu').required = false;
+        document.getElementById('s_tgl_bayi').required = false;
+
+        if (selectedType === 'identitas') {
+            if(fieldsIdentitas) fieldsIdentitas.classList.remove('d-none');
+        } else if (selectedType === 'ihs') {
+            if(fieldsIhs) fieldsIhs.classList.remove('d-none');
+            document.getElementById('s_ihs').required = true;
+        } else if (selectedType === 'bayi') {
+            if(fieldsBayi) fieldsBayi.classList.remove('d-none');
+            document.getElementById('s_nik_ibu').required = true;
+        }
+    }
+
+    if (radioTypes.length > 0) {
+        radioTypes.forEach(radio => radio.addEventListener('change', toggleSearchFields));
+        toggleSearchFields();
+    }
+
     document.getElementById('btn-search-action').addEventListener('click', async () => {
         const formSearch = document.getElementById('form-search');
         if (!formSearch.reportValidity()) return;
 
-        const keyword = document.getElementById('s_keyword').value.trim();
-        const type = document.getElementById('s_type').value;
+        const type = document.querySelector('input[name="search_type"]:checked').value;
         const env = document.querySelector('input[name="env_var"]:checked').value;
         
-        const endpoint = type === 'ihs' ? `/fhir-r4/v1/Patient/${keyword}` : `/fhir-r4/v1/Patient?identifier=...${keyword}`;
+        let endpoint = '';
+        const formData = new URLSearchParams();
+        formData.append('csrf_token', csrfToken);
+        formData.append('type', type);
+
+        if (type === 'identitas') {
+            const nik = document.getElementById('s_nik').value.trim();
+            const nama = document.getElementById('s_nama').value.trim();
+            const tgl = document.getElementById('s_tgl').value.trim();
+            const jk = document.getElementById('s_jk').value;
+
+            if (!nik && (!nama || !tgl || !jk)) {
+                showToast('error', 'Jika NIK kosong, Nama Lengkap, Tanggal Lahir, dan Jenis Kelamin harus diisi semua.');
+                return;
+            }
+
+            formData.append('s_nik', nik);
+            formData.append('s_nama', nama);
+            formData.append('s_tgl', tgl);
+            formData.append('s_jk', jk);
+            
+            endpoint = `/fhir-r4/v1/Patient?`;
+            let params = [];
+            if(nik) params.push(`identifier=https://fhir.kemkes.go.id/id/nik|${nik}`);
+            if(nama) params.push(`name=${encodeURIComponent(nama)}`);
+            if(tgl) params.push(`birthdate=${tgl}`);
+            if(jk) params.push(`gender=${jk === 'Laki-laki' ? 'male' : 'female'}`);
+            endpoint += params.join('&');
+
+        } else if (type === 'ihs') {
+            const ihs = document.getElementById('s_ihs').value.trim();
+            formData.append('s_ihs', ihs);
+            endpoint = `/fhir-r4/v1/Patient/${ihs}`;
+        } else if (type === 'bayi') {
+            const nikIbu = document.getElementById('s_nik_ibu').value.trim();
+            const tglBayi = document.getElementById('s_tgl_bayi').value.trim();
+            formData.append('s_nik_ibu', nikIbu);
+            formData.append('s_tgl_bayi', tglBayi);
+            
+            endpoint = `/fhir-r4/v1/Patient?identifier=https://fhir.kemkes.go.id/id/nik-ibu|${nikIbu}`;
+            if(tglBayi) endpoint += `&birthdate=${tglBayi}`;
+        }
+        
         const reqData = { type: 'Cari Pasien', env: env, endpoint: endpoint };
 
         setLoadingState('btn-search-action', true);
-
-        const formData = new URLSearchParams();
-        formData.append('csrf_token', csrfToken);
-        formData.append('keyword', keyword);
-        formData.append('type', type);
 
         try {
             const response = await fetch('api/search_pasien.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData.toString() });

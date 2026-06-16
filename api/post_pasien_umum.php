@@ -217,7 +217,7 @@ if ($u_kembar === "Tunggal") {
 $result = satusehat_post_patient($access_token, $payload, $env);
 
 if ($result['success']) {
-    json_response(200, ['success' => true, 'message' => 'POST PATIENT SUCCESS', 'id' => $result['id']]);
+    json_response(200, ['success' => true, 'message' => 'POST PATIENT SUCCESS', 'id' => $result['id'], 'request_body' => $payload]);
 } else {
-    json_response(400, ['success' => false, 'error' => 'POST PATIENT FAILED', 'details' => $result]);
+    json_response(400, ['success' => false, 'error' => 'POST PATIENT FAILED', 'details' => $result, 'request_body' => $payload]);
 }
