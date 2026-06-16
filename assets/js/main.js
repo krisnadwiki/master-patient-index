@@ -50,7 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function generatePatientCardHtml(res) {
+    function generatePatientCardHtml(res, options = {}) {
+        const { showUpdateBtn = false } = options;
         let name = res.name && res.name.length > 0 ? res.name[0].text : '-';
         let ihs = res.id || '-';
         
@@ -113,15 +114,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if(alamatStr !== '-') infoItems += `<div class="col-sm-12 mt-2 pt-2 border-top"><strong>Alamat:</strong> ${alamatStr}</div>`;
 
         return `
-            <div class="card border border-ss-primary mb-3 shadow-sm rounded-1">
+            <div class="card border border-ss-primary mb-3 shadow-sm rounded-1 patient-card"
+                 data-ihs="${ihs}"
+                 data-nama="${name}"
+                 data-tgl="${tgl}"
+                 data-jk="${jk === 'male' ? 'Laki-laki' : jk === 'female' ? 'Perempuan' : jk}">
                 <div class="card-header bg-light border-bottom border-ss-primary fw-bold d-flex justify-content-between align-items-center">
                     <span class="text-ss-primary"><i class="bi bi-person-fill me-2"></i>${name}</span>
-                    <span class="badge bg-ss-primary text-white">IHS: ${ihs}</span>
+                    <span class="badge bg-ss-primary text-white copy-ihs-badge" role="button" title="Klik untuk menyalin IHS" style="cursor:pointer" data-ihs="${ihs}">IHS: ${ihs} <i class="bi bi-clipboard ms-1" style="font-size:0.75em"></i></span>
                 </div>
                 <div class="card-body">
                     <div class="row g-2 text-sm">
                         ${infoItems}
                     </div>
+                    ${showUpdateBtn ? `
+                    <div class="mt-3 pt-2 border-top">
+                        <button type="button" class="btn btn-ss-primary w-100 py-2 fw-medium btn-update-from-search">
+                            <i class="bi bi-pencil-square me-2"></i>Update Identitas Pasien
+                        </button>
+                    </div>` : ''}
                 </div>
             </div>
         `;
@@ -140,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (reqData.type === 'Cari Pasien' && resData.raw.response && resData.raw.response.entry) {
                 resData.raw.response.entry.forEach((item) => {
-                    patientCardsHtml += generatePatientCardHtml(item.resource);
+                    patientCardsHtml += generatePatientCardHtml(item.resource, { showUpdateBtn: true });
                 });
                 
                 statusHtml = `
@@ -236,6 +247,59 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rawResponse.request_body) delete rawResponse.request_body;
         const rawJsonString = JSON.stringify(rawResponse, null, 2);
 
+        // --- SIMGos Logic ---
+        let simgosIhsHref = '';
+        let simgosNikHref = '';
+        let showSimgosPanel = false;
+
+        const urlSimgosInput = document.getElementById('url_simgos');
+        const simgosBaseUrl = urlSimgosInput ? urlSimgosInput.value.trim() : '';
+
+        if (resData.isSuccess && simgosBaseUrl) {
+            let extractedIhs = resData.ihs || resData.raw.id || null;
+            let extractedNik = null;
+            
+            if (resData.raw.response) {
+                if (resData.raw.response.entry && resData.raw.response.entry.length > 0) {
+                    const firstRes = resData.raw.response.entry[0].resource;
+                    if (!extractedIhs) extractedIhs = firstRes.id;
+                    if (firstRes.identifier) {
+                        const nikId = firstRes.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
+                        if (nikId) extractedNik = nikId.value;
+                    }
+                } else if (resData.raw.response.resourceType === 'Patient') {
+                    const res = resData.raw.response;
+                    if (!extractedIhs) extractedIhs = res.id;
+                    if (res.identifier) {
+                        const nikId = res.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
+                        if (nikId) extractedNik = nikId.value;
+                    }
+                }
+            }
+
+            // Validasi NIK: Hanya 16 digit angka (abaikan masking ################)
+            let isNikValid = false;
+            if (extractedNik && /^\d{16}$/.test(extractedNik)) {
+                isNikValid = true;
+            }
+
+            if (extractedIhs || isNikValid) {
+                showSimgosPanel = true;
+                if (extractedIhs) simgosIhsHref = `${simgosBaseUrl}/webservice/kemkes/ihs/patient?id=${extractedIhs}`;
+                if (isNikValid) simgosNikHref = `${simgosBaseUrl}/webservice/kemkes/ihs/patient?nik=${extractedNik}`;
+            }
+        }
+
+        const simgosPanelHtml = showSimgosPanel ? `
+            <div class="alert alert-light border mb-3 p-3" id="simgos-action-panel">
+                <h6 class="fw-bold text-ss-primary mb-2" style="font-size: 0.85rem;"><i class="bi bi-link-45deg me-1"></i>Update Patient ke SIMGos</h6>
+                <div class="d-flex gap-2">
+                    <a href="${simgosIhsHref}" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill" id="btn-simgos-ihs">Update by IHS</a>
+                    <a href="${simgosNikHref || '#'}" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill ${simgosNikHref ? '' : 'disabled'}" id="btn-simgos-nik">Update by NIK</a>
+                </div>
+            </div>
+        ` : '';
+
         const cardHtml = `
             <div class="res-card mb-3">
                 <div class="res-header d-flex justify-content-between">
@@ -255,6 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     
                     ${statusHtml}
+
+                    ${simgosPanelHtml}
 
                     <div class="accordion accordion-flush mt-3 border" id="acc-${accId}">
                         ${requestBodyHtml}
@@ -276,66 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
-        responseContent.innerHTML = cardHtml; // Replace existing
-
-        // SIMGos Logic
-        const simgosPanel = document.getElementById('simgos-action-panel');
-        const btnSimgosIhs = document.getElementById('btn-simgos-ihs');
-        const btnSimgosNik = document.getElementById('btn-simgos-nik');
-        
-        if (simgosPanel) {
-            simgosPanel.classList.add('d-none');
-            btnSimgosIhs.classList.add('disabled');
-            btnSimgosIhs.removeAttribute('href');
-            btnSimgosNik.classList.add('disabled');
-            btnSimgosNik.removeAttribute('href');
-
-            const urlSimgosInput = document.getElementById('url_simgos');
-            const simgosBaseUrl = urlSimgosInput ? urlSimgosInput.value.trim() : '';
-
-            if (resData.isSuccess && simgosBaseUrl) {
-                let extractedIhs = resData.ihs || resData.raw.id || null;
-                let extractedNik = null;
-                
-                if (resData.raw.response) {
-                    if (resData.raw.response.entry && resData.raw.response.entry.length > 0) {
-                        const firstRes = resData.raw.response.entry[0].resource;
-                        if (!extractedIhs) extractedIhs = firstRes.id;
-                        if (firstRes.identifier) {
-                            const nikId = firstRes.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
-                            if (nikId) extractedNik = nikId.value;
-                        }
-                    } else if (resData.raw.response.resourceType === 'Patient') {
-                        const res = resData.raw.response;
-                        if (!extractedIhs) extractedIhs = res.id;
-                        if (res.identifier) {
-                            const nikId = res.identifier.find(id => id.system === "https://fhir.kemkes.go.id/id/nik");
-                            if (nikId) extractedNik = nikId.value;
-                        }
-                    }
-                }
-
-                // Validasi NIK: Hanya 16 digit angka (abaikan masking ################)
-                let isNikValid = false;
-                if (extractedNik && /^\d{16}$/.test(extractedNik)) {
-                    isNikValid = true;
-                }
-
-                if (extractedIhs || isNikValid) {
-                    simgosPanel.classList.remove('d-none');
-                    
-                    if (extractedIhs) {
-                        btnSimgosIhs.href = `${simgosBaseUrl}/webservice/kemkes/ihs/patient?id=${extractedIhs}`;
-                        btnSimgosIhs.classList.remove('disabled');
-                    }
-                    
-                    if (isNikValid) {
-                        btnSimgosNik.href = `${simgosBaseUrl}/webservice/kemkes/ihs/patient?nik=${extractedNik}`;
-                        btnSimgosNik.classList.remove('disabled');
-                    }
-                }
-            }
-        }
+        responseContent.innerHTML = cardHtml;
     }
 
 
@@ -362,11 +369,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     applyEnv();
-    
-    // Init URL SIMGos from .env default
-    const urlSimgosInput = document.getElementById('url_simgos');
-    if (urlSimgosInput && typeof defaultSimgosUrl !== 'undefined') {
-        urlSimgosInput.value = defaultSimgosUrl;
+
+    // Show SIMGos buttons in Umum & Bayi tabs if credentials are configured
+    if (hasSimgosCredentials) {
+        const simgosUmumWrapper = document.getElementById('simgos-search-wrapper-umum');
+        const simgosBayiWrapper = document.getElementById('simgos-search-wrapper-bayi');
+        if (simgosUmumWrapper) simgosUmumWrapper.classList.remove('d-none');
+        if (simgosBayiWrapper) simgosBayiWrapper.classList.remove('d-none');
     }
 
     // --- Clear Form ---
@@ -542,6 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fieldsIdentitas = document.getElementById('search-fields-identitas');
     const fieldsIhs = document.getElementById('search-fields-ihs');
     const fieldsBayi = document.getElementById('search-fields-bayi');
+    const simgosSearchWrapper = document.getElementById('simgos-search-wrapper');
 
     function toggleSearchFields() {
         const selectedType = document.querySelector('input[name="search_type"]:checked')?.value;
@@ -549,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fieldsIdentitas) fieldsIdentitas.classList.add('d-none');
         if (fieldsIhs) fieldsIhs.classList.add('d-none');
         if (fieldsBayi) fieldsBayi.classList.add('d-none');
+        if (simgosSearchWrapper) simgosSearchWrapper.classList.add('d-none');
 
         // remove required
         document.getElementById('s_nik').required = false;
@@ -561,6 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (selectedType === 'identitas') {
             if(fieldsIdentitas) fieldsIdentitas.classList.remove('d-none');
+            if (simgosSearchWrapper && hasSimgosCredentials) simgosSearchWrapper.classList.remove('d-none');
         } else if (selectedType === 'ihs') {
             if(fieldsIhs) fieldsIhs.classList.remove('d-none');
             document.getElementById('s_ihs').required = true;
@@ -836,6 +848,400 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-generate').click();
         }
     }, 500);
+
+    // --- Copy IHS Badge Click ---
+    document.addEventListener('click', function(e) {
+        const badge = e.target.closest('.copy-ihs-badge');
+        if (badge) {
+            const ihsValue = badge.getAttribute('data-ihs');
+            if (ihsValue) {
+                navigator.clipboard.writeText(ihsValue).then(() => {
+                    showToast('success', `IHS ${ihsValue} berhasil disalin ke clipboard.`);
+                    const icon = badge.querySelector('i');
+                    if (icon) {
+                        icon.className = 'bi bi-check2 ms-1';
+                        setTimeout(() => { icon.className = 'bi bi-clipboard ms-1'; }, 2000);
+                    }
+                }).catch(err => {
+                    console.error('Failed to copy IHS: ', err);
+                });
+            }
+        }
+    });
+
+    // --- Delegated: Update Identitas from search result ---
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-update-from-search');
+        if (!btn) return;
+
+        const card = btn.closest('.patient-card');
+        if (!card) return;
+
+        const ihs   = card.dataset.ihs || '';
+        const nama  = card.dataset.nama || '';
+        const tgl   = card.dataset.tgl || '';
+        const jk    = card.dataset.jk || '';
+
+        // Fill Update tab required fields
+        const pIhs   = document.getElementById('p_ihs');
+        const pNama  = document.getElementById('p_nama_existing');
+        const pTgl   = document.getElementById('p_tgl_existing');
+        const pJk    = document.getElementById('p_jk_existing');
+
+        if (pIhs)  pIhs.value = ihs;
+        if (pNama) pNama.value = nama;
+        if (pTgl)  pTgl.value = tgl;
+        if (pJk)   pJk.value = jk;
+
+        // Switch to Update tab
+        const patchTab = document.getElementById('patch-tab');
+        if (patchTab) {
+            const tab = new bootstrap.Tab(patchTab);
+            tab.show();
+        }
+
+        showToast('success', 'Data pasien berhasil diisi ke form Update. Silakan lengkapi kolom yang ingin diubah.');
+    });
+
+    // --- SIMGos Search Pasien Logic (shared across Search, Umum, Bayi) ---
+    const simgosSearchModalEl = document.getElementById('simgosSearchModal');
+    const btnSimgosSearch = document.getElementById('btn-simgos-search');
+    const btnSimgosSearchAction = document.getElementById('btn-simgos-search-action');
+    const btnSimgosReset = document.getElementById('btn-simgos-reset');
+    const simgosSearchStatus = document.getElementById('simgos-search-status');
+    const simgosModalTitle = document.getElementById('simgos-modal-title');
+    let simgosSearchModalInstance = null;
+    let simgosFormContext = 'search'; // 'search' | 'umum' | 'bayi'
+
+    const simgosContextTitles = {
+        search: 'Cari Pasien dari SIMGos',
+        umum: 'Ambil Data Registrasi Umum dari SIMGos',
+        bayi: 'Ambil Data Registrasi Bayi dari SIMGos'
+    };
+
+    if (simgosSearchModalEl) {
+        simgosSearchModalInstance = new bootstrap.Modal(simgosSearchModalEl);
+    }
+
+    // Helper: reset SIMGos modal fields
+    function resetSimgosModal() {
+        document.getElementById('simgos_norm').value = '';
+        document.getElementById('simgos_tgl_lahir').value = '';
+        simgosSearchStatus.classList.add('d-none');
+        btnSimgosSearchAction.disabled = false;
+    }
+
+    function openSimgosModal(context) {
+        simgosFormContext = context;
+        if (simgosModalTitle) simgosModalTitle.textContent = simgosContextTitles[context] || simgosContextTitles.search;
+        resetSimgosModal();
+        if (simgosSearchModalInstance) simgosSearchModalInstance.show();
+    }
+
+    // Search tab button
+    if (btnSimgosSearch) {
+        btnSimgosSearch.addEventListener('click', () => openSimgosModal('search'));
+    }
+
+    // Umum & Bayi tab buttons
+    document.querySelectorAll('.btn-simgos-search-form').forEach(btn => {
+        btn.addEventListener('click', () => openSimgosModal(btn.dataset.form));
+    });
+
+    if (btnSimgosReset) {
+        btnSimgosReset.addEventListener('click', () => resetSimgosModal());
+    }
+
+    // --- Helper: auto-fill wilayah dropdowns following the cascade hierarchy ---
+    // Loads each level via API, sets native value BEFORE creating TomSelect
+    // Example: WILAYAH=3518111011
+    //   Provinsi=35 → load Kota → 3518 → load Kec → 351811 → load Desa → 3518111011
+    async function autofillWilayah(wilayahCode, provId, kotaId, kecId, desaId) {
+        if (!wilayahCode || wilayahCode.length < 2) return;
+        const provCode = wilayahCode.substring(0, 2);
+        const kotaCode = wilayahCode.substring(0, 4);
+        const kecCode  = wilayahCode.substring(0, 6);
+        const desaCode = wilayahCode.substring(0, 10);
+
+        const provEl = document.getElementById(provId);
+        const kotaEl = document.getElementById(kotaId);
+        const kecEl  = document.getElementById(kecId);
+        const desaEl = document.getElementById(desaId);
+
+        // Find matching option value by SIMGos code (handles dot-format like "35.18")
+        function findMatchValue(el, code) {
+            if (!el || !code) return null;
+            for (let opt of el.options) {
+                if (opt.value && opt.value.replace(/\./g, '') === code) {
+                    return opt.value;
+                }
+            }
+            return null;
+        }
+
+        // Load options, set native value, then create TomSelect
+        // This ensures TomSelect reads the pre-selected value during init
+        async function loadAndSetValue(el, type, parentCode, matchCode) {
+            if (!el) return null;
+
+            // Destroy existing TomSelect
+            if (tsInstances[el.id]) {
+                tsInstances[el.id].destroy();
+                delete tsInstances[el.id];
+            }
+
+            const items = await fetchWilayah(type, parentCode);
+            if (!items || items.length === 0) return null;
+
+            let defaultText = 'Pilih...';
+            if (type === 'provinces') defaultText = 'Pilih Provinsi...';
+            else if (type === 'cities') defaultText = 'Pilih Kab/Kota...';
+            else if (type === 'districts') defaultText = 'Pilih Kecamatan...';
+            else if (type === 'sub-districts') defaultText = 'Pilih Kel/Desa...';
+
+            let html = `<option value="">${defaultText}</option>`;
+            items.forEach(item => {
+                html += `<option value="${item.code}">[${item.code}] - ${item.name}</option>`;
+            });
+
+            el.innerHTML = html;
+            el.disabled = false;
+
+            // Set native value BEFORE creating TomSelect
+            const matched = findMatchValue(el, matchCode);
+            if (matched) el.value = matched;
+
+            // Create TomSelect — it reads the pre-selected value from native select
+            tsInstances[el.id] = new TomSelect(el, {
+                create: false,
+                sortField: { field: 'text', direction: 'asc' },
+                placeholder: 'Ketik untuk mencari...'
+            });
+
+            return matched;
+        }
+
+        // Enable downstream selects upfront
+        [kotaEl, kecEl, desaEl].forEach(el => {
+            if (el) {
+                el.disabled = false;
+                if (tsInstances[el.id]) tsInstances[el.id].enable();
+            }
+        });
+
+        // Level 1: Provinsi
+        const provValue = await loadAndSetValue(provEl, 'provinces', '', provCode);
+        if (!provValue) return;
+
+        // Level 2: Kab/Kota (parent = selected provinsi code)
+        const kotaValue = await loadAndSetValue(kotaEl, 'cities', provValue, kotaCode);
+        if (!kotaValue) return;
+
+        // Level 3: Kecamatan (parent = selected kota code)
+        const kecValue = await loadAndSetValue(kecEl, 'districts', kotaValue, kecCode);
+        if (!kecValue) return;
+
+        // Level 4: Kelurahan/Desa (parent = selected kec code)
+        await loadAndSetValue(desaEl, 'sub-districts', kecValue, desaCode);
+    }
+
+    // --- Helper: safe set select value by matching text ---
+    function setSelectByText(selectEl, text) {
+        if (!selectEl || !text) return;
+        const normalised = text.toLowerCase().replace(/[\s-]+/g, '');
+        for (let opt of selectEl.options) {
+            if (opt.value.toLowerCase().replace(/[\s-]+/g, '') === normalised) {
+                selectEl.value = opt.value;
+                return;
+            }
+        }
+        // Fallback: try text content match
+        for (let opt of selectEl.options) {
+            if (opt.text.toLowerCase().replace(/[\s-]+/g, '') === normalised) {
+                selectEl.value = opt.value;
+                return;
+            }
+        }
+    }
+
+    // --- Auto-fill Umum form ---
+    async function autofillFormUmum(raw) {
+        const nik = extractNik(raw);
+        const nama = (raw.NAMA || '').trim();
+
+        const tgl = (raw.TANGGAL_LAHIR || '').split(' ')[0];
+        const tempatLahir = raw.REFERENSI?.TEMPATLAHIR?.DESKRIPSI || '';
+        const jkDesc = raw.REFERENSI?.JENISKELAMIN?.DESKRIPSI || '';
+        const alamat = raw.ALAMAT || '';
+        const rt = raw.RT ? raw.RT.padStart(3, '0') : '';
+        const rw = raw.RW ? raw.RW.padStart(3, '0') : '';
+        const wilayah = raw.WILAYAH || '';
+        const wnCode = raw.KEWARGANEGARAAN || '';
+        const maritalDesc = raw.REFERENSI?.STATUS_PERKAWINAN?.DESKRIPSI || '';
+        const phone = extractPhone(raw);
+
+        // Identity fields — Nama uses NAMA only (no Gelar Depan/Belakang)
+        if (nik) document.getElementById('u_nik').value = nik;
+        if (nama) document.getElementById('u_nama').value = nama;
+        if (tgl) document.getElementById('u_tgl').value = tgl;
+        if (tempatLahir) document.getElementById('u_tempat').value = tempatLahir;
+        setSelectByText(document.getElementById('u_jk'), jkDesc);
+        if (wnCode === '71' || wnCode === '1') document.getElementById('u_wn').value = 'WNI';
+        else if (wnCode === '2') document.getElementById('u_wn').value = 'WNA';
+
+        // Marital status: map description to dropdown code
+        const maritalMap = {
+            'belum kawin': 'S', 'belum menikah': 'S',
+            'kawin': 'M', 'menikah': 'M',
+            'cerai hidup': 'D',
+            'cerai mati': 'W'
+        };
+        const maritalKey = maritalDesc.toLowerCase();
+        if (maritalMap[maritalKey]) document.getElementById('u_marital').value = maritalMap[maritalKey];
+
+        // Address fields
+        if (alamat) document.getElementById('u_alamat').value = alamat;
+        if (rt) document.getElementById('u_rt').value = rt;
+        if (rw) document.getElementById('u_rw').value = rw;
+        if (phone) document.getElementById('u_phone_mobile').value = phone;
+
+        // Wilayah — load cascade hierarchy, then set values from code
+        if (wilayah) await autofillWilayah(wilayah, 'u_prov', 'u_kota', 'u_kec', 'u_desa');
+    }
+
+    // --- Auto-fill Bayi form ---
+    async function autofillFormBayi(raw) {
+        const nik = extractNik(raw);
+        const gelarDepan = (raw.GELAR_DEPAN || '').trim();
+        const nama = (raw.NAMA || '').trim();
+        // Bayi: concat Gelar Depan only if it starts with "BY NY" (case insensitive)
+        const isByNy = gelarDepan.toUpperCase().startsWith('BY');
+        const namaBayi = isByNy ? `${gelarDepan} ${nama}` : nama;
+
+        const tgl = (raw.TANGGAL_LAHIR || '').split(' ')[0];
+        const tempatLahir = raw.REFERENSI?.TEMPATLAHIR?.DESKRIPSI || '';
+        const jkDesc = raw.REFERENSI?.JENISKELAMIN?.DESKRIPSI || '';
+        const alamat = raw.ALAMAT || '';
+        const rt = raw.RT ? raw.RT.padStart(3, '0') : '';
+        const rw = raw.RW ? raw.RW.padStart(3, '0') : '';
+        const wilayah = raw.WILAYAH || '';
+        const wnCode = raw.KEWARGANEGARAAN || '';
+        const phone = extractPhone(raw);
+
+        // Identity fields (NIK Ibu NOT filled — not available in SIMGos response)
+        if (nik) document.getElementById('b_nik_anak').value = nik;
+        if (namaBayi) document.getElementById('b_nama_anak').value = namaBayi;
+        if (tgl) document.getElementById('b_tgl').value = tgl;
+        if (tempatLahir) document.getElementById('b_tempat').value = tempatLahir;
+        setSelectByText(document.getElementById('b_jk'), jkDesc);
+        if (wnCode === '71' || wnCode === '1') document.getElementById('b_wn').value = 'WNI';
+        else if (wnCode === '2') document.getElementById('b_wn').value = 'WNA';
+
+        // Address fields
+        if (alamat) document.getElementById('b_alamat').value = alamat;
+        if (rt) document.getElementById('b_rt').value = rt;
+        if (rw) document.getElementById('b_rw').value = rw;
+        if (phone) document.getElementById('b_phone_mobile').value = phone;
+
+        // Wilayah — load cascade hierarchy, then set values from code
+        if (wilayah) await autofillWilayah(wilayah, 'b_prov', 'b_kota', 'b_kec', 'b_desa');
+    }
+
+    // --- Helper: extract NIK from KARTUIDENTITAS ---
+    function extractNik(raw) {
+        if (!raw.KARTUIDENTITAS || !Array.isArray(raw.KARTUIDENTITAS)) return '';
+        const kartu = raw.KARTUIDENTITAS.find(k => k.JENIS === '1');
+        return kartu ? (kartu.NOMOR || '') : '';
+    }
+
+    // --- Helper: extract phone from KONTAK ---
+    function extractPhone(raw) {
+        if (!raw.KONTAK || !Array.isArray(raw.KONTAK)) return '';
+        const kontak = raw.KONTAK.find(k => k.JENIS === '3');
+        return kontak ? (kontak.NOMOR || '') : '';
+    }
+
+    // --- Main SIMGos search action handler ---
+    if (btnSimgosSearchAction) {
+        btnSimgosSearchAction.addEventListener('click', async () => {
+            const norm = document.getElementById('simgos_norm').value.trim();
+            const tglLahir = document.getElementById('simgos_tgl_lahir').value.trim();
+
+            if (!norm || !tglLahir) {
+                showToast('error', 'No. RM dan Tanggal Lahir wajib diisi.');
+                return;
+            }
+
+            btnSimgosSearchAction.disabled = true;
+            simgosSearchStatus.classList.remove('d-none');
+
+            const formData = new URLSearchParams();
+            formData.append('csrf_token', csrfToken);
+            formData.append('norm', norm);
+            formData.append('tgl_lahir', tglLahir);
+
+            try {
+                const response = await fetch('api/simgos_get_pasien.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    const p = data.data;
+                    const raw = p.raw || {};
+
+                    // Show loading state in modal during autofill
+                    simgosSearchStatus.innerHTML = `
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-ss-primary mb-2" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="fw-medium">Mohon ditunggu, sedang melakukan pengisian form otomatis...</div>
+                        </div>
+                    `;
+
+                    if (simgosFormContext === 'umum') {
+                        await autofillFormUmum(raw);
+                    } else if (simgosFormContext === 'bayi') {
+                        await autofillFormBayi(raw);
+                    } else {
+                        // Search tab: fill search form fields
+                        if (p.nik) document.getElementById('s_nik').value = p.nik;
+                        if (p.nama) document.getElementById('s_nama').value = p.nama;
+                        if (p.tgl_lahir) document.getElementById('s_tgl').value = p.tgl_lahir;
+                        if (p.jk) document.getElementById('s_jk').value = p.jk;
+                    }
+
+                    if (simgosSearchModalInstance) simgosSearchModalInstance.hide();
+                    showToast('success', `Pasien "${p.nama}" berhasil ditemukan dan data telah diisi.`);
+
+                    // For search context: auto-trigger SATUSEHAT search to get IHS number
+                    if (simgosFormContext === 'search') {
+                        setTimeout(() => {
+                            const btnSearchAction = document.getElementById('btn-search-action');
+                            if (btnSearchAction) btnSearchAction.click();
+                        }, 600);
+                    }
+                } else {
+                    showToast('error', data.error || 'Gagal mencari pasien dari SIMGos.');
+                }
+            } catch (error) {
+                showToast('error', 'Terjadi kesalahan koneksi ke SIMGos.');
+            } finally {
+                btnSimgosSearchAction.disabled = false;
+                simgosSearchStatus.classList.add('d-none');
+                simgosSearchStatus.innerHTML = `
+                    <div class="alert alert-light border text-center mb-0">
+                        <div class="spinner-border spinner-border-sm text-ss-primary me-2" role="status"></div>
+                        <span>Mencari pasien di SIMGos...</span>
+                    </div>
+                `;
+            }
+        });
+    }
 
     // --- Global Clipboard Logic ---
     document.addEventListener('click', function(e) {

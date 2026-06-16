@@ -8,7 +8,10 @@ $staging_id = getenv('STAGING_CLIENT_ID') ?: '';
 $staging_secret = getenv('STAGING_CLIENT_SECRET') ?: '';
 $prod_id = getenv('PRODUCTION_CLIENT_ID') ?: '';
 $prod_secret = getenv('PRODUCTION_CLIENT_SECRET') ?: '';
-$url_simgos = getenv('URL_SIMGOS') ?: '';
+$url_simgos  = getenv('URL_SIMGOS') ?: '';
+$x_username  = getenv('X_USERNAME') ?: '';
+$x_password  = getenv('X_PASSWORD') ?: '';
+$has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_password)) ? 'true' : 'false';
 
 ?>
 <!DOCTYPE html>
@@ -30,7 +33,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
             Staging: { id: "<?= htmlspecialchars($staging_id) ?>", secret: "<?= htmlspecialchars($staging_secret) ?>" },
             Production: { id: "<?= htmlspecialchars($prod_id) ?>", secret: "<?= htmlspecialchars($prod_secret) ?>" }
         };
-        const defaultSimgosUrl = "<?= htmlspecialchars($url_simgos) ?>";
+        const hasSimgosCredentials = <?= $has_simgos_creds ?>;
     </script>
 </head>
 <body class="bg-ss-light">
@@ -65,7 +68,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
 <!-- Modal Kredensial -->
 <!-- Modal Kredensial -->
 <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-0 border-0 shadow">
 
             <div class="modal-header bg-ss-primary text-white rounded-0">
@@ -106,8 +109,24 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                            autocomplete="off">
                 </div>
 
+                 <!-- URL SIMGos -->
+                <div class="mb-0">
+                    <label for="url_simgos" class="form-label fw-medium">
+                        URL SIMGos <span class="text-muted fw-normal">(Opsional)</span>
+                    </label>
+
+                    <input type="text"
+                           id="url_simgos"
+                           class="form-control rounded-0"
+                           placeholder="https://..."
+                           value="<?= htmlspecialchars($url_simgos) ?>"
+                           autocomplete="off">
+                    <div class="form-text">Digunakan untuk fitur Update IHS Patient SIMGos.</div>
+                </div>
+
+
                 <!-- Environment -->
-                <div class="mb-4">
+                <div class="mt-4">
                     <label class="form-label fw-medium">
                         Environment
                     </label>
@@ -140,25 +159,13 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                     </div>
                 </div>
 
-                <!-- URL SIMGos -->
-                <div class="mb-0">
-                    <label for="url_simgos" class="form-label fw-medium">
-                        URL SIMGos <span class="text-muted fw-normal">(Opsional)</span>
-                    </label>
-
-                    <input type="text"
-                           id="url_simgos"
-                           class="form-control rounded-0"
-                           placeholder="https://..."
-                           autocomplete="off">
-                    <div class="form-text">Digunakan untuk fitur Update IHS Patient SIMGos.</div>
-                </div>
+               
 
             </div>
 
             <div class="modal-footer">
                 <button type="button"
-                        class="btn btn-outline-primary rounded-1 px-4"
+                        class="btn btn-outline-ss-primary rounded-1 px-4"
                         data-bs-dismiss="modal">
                     Tutup
                 </button>
@@ -210,6 +217,13 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                 <input type="radio" class="btn-check" name="search_type" id="search_type_bayi" value="bayi">
                                 <label class="btn btn-outline-ss-primary px-2" for="search_type_bayi">Bayi Baru Lahir</label>
                             </div>
+                        </div>
+
+                        <div id="simgos-search-wrapper" class="mb-3 d-none">
+                            <button type="button" class="btn btn-outline-ss-primary fw-medium w-100 py-2" id="btn-simgos-search">
+                                <i class="bi bi-hospital me-2"></i>Cari Pasien dari SIMGos
+                            </button>
+                            <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
                         </div>
 
                         <div id="search-fields-identitas" class="row g-3 mb-3">
@@ -270,7 +284,14 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                 <!-- Tab Registrasi Umum -->
                 <div class="tab-pane fade" id="umum" role="tabpanel" aria-labelledby="umum-tab">
                     <form id="form-umum">
-                        
+
+                        <div id="simgos-search-wrapper-umum" class="mb-3 d-none">
+                            <button type="button" class="btn btn-outline-ss-primary fw-medium w-100 py-2 btn-simgos-search-form" data-form="umum">
+                                <i class="bi bi-hospital me-2"></i>Cari Pasien dari SIMGos
+                            </button>
+                            <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
+                        </div>
+
                         <div class="accordion mb-4" id="accordionUtamaUmum">
                             <div class="accordion-item border-0 bg-transparent">
                                 <h2 class="accordion-header">
@@ -288,7 +309,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="u_nama" class="form-label fw-medium">Nama Lengkap <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control rounded-1" id="u_nama" required placeholder="Contoh: John Doe">
+                                                <input type="text" class="form-control rounded-1" id="u_nama" required placeholder="Contoh: Muhammad Al Fatih">
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="u_tgl" class="form-label fw-medium">Tanggal Lahir <span class="text-danger">*</span></label>
@@ -296,7 +317,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="u_tempat" class="form-label fw-medium">Tempat Lahir (Kota)</label>
-                                                <input type="text" class="form-control rounded-1" id="u_tempat" placeholder="Contoh: Jakarta">
+                                                <input type="text" class="form-control rounded-1" id="u_tempat" placeholder="Contoh: Kota Kediri">
                                             </div>
                                             <div class="col-md-4">
                                                 <label for="u_jk" class="form-label fw-medium">Jenis Kelamin <span class="text-danger">*</span></label>
@@ -341,7 +362,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                         <div class="row g-3 mb-2">
                                             <div class="col-12">
                                                 <label for="u_alamat" class="form-label fw-medium">Alamat Lengkap (Sesuai KTP) <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control rounded-1" id="u_alamat" required placeholder="Contoh: Jl. Merdeka No. 10">
+                                                <input type="text" class="form-control rounded-1" id="u_alamat" required placeholder="Contoh: JL. Kh. Wakhid Hasyim No. 64, Kota Kediri">
                                             </div>
                                             <div class="col-md-3 col-6">
                                                 <label for="u_prov" class="form-label fw-medium">Provinsi</label>
@@ -394,6 +415,17 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                         <h6 class="fw-bold mb-3">Identitas Tambahan</h6>
                                         <div class="row g-3 mb-4">
                                             <div class="col-md-6">
+                                                <label for="u_kembar" class="form-label fw-medium">Status Kelahiran</label>
+                                                <select class="form-select rounded-1" id="u_kembar">
+                                                    <option value="Tunggal" selected>Tunggal</option>
+                                                    <option value="Kembar">Kembar</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="u_urutan" class="form-label fw-medium">Urutan Kelahiran</label>
+                                                <input type="number" class="form-control rounded-1" id="u_urutan" min="1" placeholder="1">
+                                            </div>
+                                            <div class="col-md-6">
                                                 <label for="u_paspor" class="form-label fw-medium">Nomor Paspor</label>
                                                 <input type="text" class="form-control rounded-1" id="u_paspor" placeholder="A1234567">
                                             </div>
@@ -421,17 +453,6 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                                 <label for="u_contact_phone" class="form-label fw-medium">No. HP Kontak Darurat</label>
                                                 <input type="text" class="form-control rounded-1" id="u_contact_phone" pattern="\d+" title="Hanya angka diperbolehkan" placeholder="081234567890" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                             </div>
-                                            <div class="col-md-6">
-                                                <label for="u_kembar" class="form-label fw-medium">Status Kelahiran</label>
-                                                <select class="form-select rounded-1" id="u_kembar">
-                                                    <option value="Tunggal" selected>Tunggal</option>
-                                                    <option value="Kembar">Kembar</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="u_urutan" class="form-label fw-medium">Urutan Kelahiran</label>
-                                                <input type="number" class="form-control rounded-1" id="u_urutan" min="1" placeholder="1">
-                                            </div>
                                         </div>
 
                                     </div>
@@ -450,7 +471,14 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                 <!-- Tab Registrasi Bayi -->
                 <div class="tab-pane fade" id="bayi" role="tabpanel" aria-labelledby="bayi-tab">
                     <form id="form-bayi">
-                        
+
+                        <div id="simgos-search-wrapper-bayi" class="mb-3 d-none">
+                            <button type="button" class="btn btn-outline-ss-primary fw-medium w-100 py-2 btn-simgos-search-form" data-form="bayi">
+                                <i class="bi bi-hospital me-2"></i>Cari Pasien dari SIMGos
+                            </button>
+                            <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
+                        </div>
+
                         <div class="accordion mb-4" id="accordionUtamaBayi">
                             <div class="accordion-item border-0 bg-transparent">
                                 <h2 class="accordion-header">
@@ -481,7 +509,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="b_tempat" class="form-label fw-medium">Tempat Lahir (Kota)</label>
-                                                <input type="text" class="form-control rounded-1" id="b_tempat" placeholder="Contoh: Surabaya">
+                                                <input type="text" class="form-control rounded-1" id="b_tempat" placeholder="Contoh: Kota Kediri">
                                             </div>
                                             <div class="col-md-3">
                                                 <label for="b_jk" class="form-label fw-medium">Jenis Kelamin <span class="text-danger">*</span></label>
@@ -527,7 +555,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                         <div class="row g-3 mb-2">
                                             <div class="col-12">
                                                 <label for="b_alamat" class="form-label fw-medium">Alamat Lengkap (Sesuai KTP) <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control rounded-1" id="b_alamat" required placeholder="Contoh: Jl. Diponegoro No. 5">
+                                                <input type="text" class="form-control rounded-1" id="b_alamat" required placeholder="Contoh: JL. Kh. Wakhid Hasyim No. 64, Kota Kediri">
                                             </div>
                                             <div class="col-md-3 col-6">
                                                 <label for="b_prov" class="form-label fw-medium">Provinsi</label>
@@ -607,7 +635,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
 
                 <!-- Tab Update Pasien -->
                 <div class="tab-pane fade" id="patch" role="tabpanel" tabindex="0">
-                    <div class="alert alert-info border-0 rounded-1 d-flex align-items-center" role="alert">
+                    <div class="alert alert-success border-0 rounded-1 d-flex align-items-center" role="alert">
                         <i class="bi bi-info-circle-fill me-3 fs-4"></i>
                         <div>Gunakan form ini untuk memperbarui (PATCH) data pasien di SATUSEHAT. Hanya isi kolom yang ingin diubah.</div>
                     </div>
@@ -616,8 +644,8 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                         <div class="card border-0 bg-light mb-4 rounded-1">
                             <div class="card-body p-4">
                                 <h6 class="fw-bold text-ss-primary border-bottom pb-2 mb-3"><i class="bi bi-person-check-fill me-2"></i>Data Wajib (Target & Validasi)</h6>
-                                <div class="alert alert-warning mb-4 border-0">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Penting:</strong> Masukkan Nomor IHS dan Data Existing untuk validasi PATCH.
+                                <div class="alert alert-danger mb-4 border-0">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Penting:</strong> Masukkan Nomor IHS dan Data Existing untuk validasi Update Identitas.
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-md-12">
@@ -647,7 +675,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                         <div class="card border-0 mb-4 rounded-1">
                             <div class="card-body p-4 border border-top-0 rounded-1">
                                 <h6 class="fw-bold text-ss-primary border-bottom pb-2 mb-3"><i class="bi bi-pencil-square me-2"></i>Data Baru (Update Opsional)</h6>
-                                <div class="alert alert-info mb-4 border-0">
+                                <div class="alert alert-warning mb-4 border-0">
                                     <i class="bi bi-info-circle-fill me-2"></i>Hanya isi kolom yang ingin Anda ubah. Kosongkan jika tidak ada perubahan.
                                 </div>
                                 <div class="row g-3 mb-4">
@@ -657,7 +685,7 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                     </div>
                                     <div class="col-md-6">
                                         <label for="p_nama" class="form-label fw-medium">Nama Lengkap Baru</label>
-                                        <input type="text" class="form-control rounded-1" id="p_nama" placeholder="Contoh: John Doe">
+                                        <input type="text" class="form-control rounded-1" id="p_nama" placeholder="Contoh: Muhammad Al Fatih">
                                     </div>
                                     <div class="col-md-6">
                                         <label for="p_tgl" class="form-label fw-medium">Tanggal Lahir Baru</label>
@@ -691,14 +719,14 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                                     </div>
                                     <div class="col-md-12">
                                         <label for="p_tempat" class="form-label fw-medium">Tempat Lahir Baru</label>
-                                        <input type="text" class="form-control rounded-1" id="p_tempat" placeholder="Contoh: Jakarta">
+                                        <input type="text" class="form-control rounded-1" id="p_tempat" placeholder="Contoh: Kediri">
                                     </div>
                                 </div>
 
                                 <h6 class="fw-bold text-ss-primary border-bottom pb-2 mb-3 mt-4">Alamat & Wilayah Baru</h6>
                                 <div class="mb-4">
                                     <label for="p_alamat" class="form-label fw-medium">Alamat Jalan</label>
-                                    <textarea class="form-control rounded-1" id="p_alamat" rows="2" placeholder="Contoh: JL. KH. WAKHID HASYIM"></textarea>
+                                    <textarea class="form-control rounded-1" id="p_alamat" rows="2" placeholder="Contoh: JL. Kh. Wakhid Hasyim No. 64, Kota Kediri"></textarea>
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -776,19 +804,49 @@ $url_simgos = getenv('URL_SIMGOS') ?: '';
                     
                     <!-- Dynamic Content Will Be Injected Here by JS -->
                 </div>
-                
-                <!-- SIMGos Action Panel -->
-                <div class="card-footer bg-white border-top p-3 d-none" id="simgos-action-panel">
-                    <h6 class="fw-bold text-ss-primary mb-2" style="font-size: 0.85rem;"><i class="bi bi-link-45deg me-1"></i>Update Patient ke SIMGos</h6>
-                    <div class="d-flex gap-2">
-                        <a href="#" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill disabled" id="btn-simgos-ihs">Update by IHS</a>
-                        <a href="#" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill disabled" id="btn-simgos-nik">Update by NIK</a>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
+</div>
+
+<!-- SIMGos Search Modal -->
+<div class="modal fade" id="simgosSearchModal" tabindex="-1" aria-labelledby="simgosSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-1 border-0 shadow">
+            <div class="modal-header bg-ss-primary text-white rounded-0">
+                <h5 class="modal-title fw-semibold" id="simgosSearchModalLabel">
+                    <i class="bi bi-hospital me-2"></i><span id="simgos-modal-title">Cari Pasien dari SIMGos</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="simgos_norm" class="form-label fw-medium">No. RM <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control rounded-1" id="simgos_norm" placeholder="Masukkan No. RM (angka saja)" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div class="mb-3">
+                    <label for="simgos_tgl_lahir" class="form-label fw-medium">Tanggal Lahir <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control rounded-1" id="simgos_tgl_lahir" max="<?= date('Y-m-d') ?>">
+                </div>
+                <div id="simgos-search-status" class="d-none">
+                    <div class="alert alert-light border text-center mb-0">
+                        <div class="spinner-border spinner-border-sm text-ss-primary me-2" role="status"></div>
+                        <span>Mencari pasien di SIMGos...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- <button type="button" class="btn btn-outline-secondary rounded-1" id="btn-simgos-reset">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                </button> -->
+                <button type="button" class="btn btn-light rounded-1" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-ss-primary rounded-1 fw-medium px-4" id="btn-simgos-search-action">
+                    <i class="bi bi-search me-1"></i>Cari
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Clear Form Confirmation Modal -->
