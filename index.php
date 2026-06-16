@@ -233,7 +233,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                             </div>
                             <div class="col-md-6">
                                 <label for="s_nama" class="form-label fw-medium">Nama Lengkap</label>
-                                <input type="text" class="form-control" id="s_nama" placeholder="Contoh: John Doe">
+                                <input type="text" class="form-control" id="s_nama" placeholder="Contoh: Muhammad Al Fatih">
                             </div>
                             <div class="col-md-6">
                                 <label for="s_tgl" class="form-label fw-medium">Tanggal Lahir</label>

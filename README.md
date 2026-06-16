@@ -1,191 +1,163 @@
 # Registrasi Pasien Satu Sehat (Web Version)
 
-Aplikasi berbasis web untuk pencarian, pendaftaran, dan pembaruan data pasien pada platform SATUSEHAT Kementerian Kesehatan RI. Aplikasi ini dibangun menggunakan PHP Native (tanpa framework), HTML5, Bootstrap 5, dan JavaScript murni.
+Aplikasi berbasis web untuk pencarian, pendaftaran, dan pembaruan data pasien pada platform SATUSEHAT Kementerian Kesehatan RI. Mendukung integrasi dengan **SIMGos** untuk pengambilan data pasien secara otomatis. Dibangun menggunakan PHP Native, HTML5, Bootstrap 5, dan JavaScript murni.
 
 ![alt text](assets/img/register-umum.png)
 
 ## Fitur Utama
 
-1. **Pencarian Pasien (Cari Pasien by NIK)**
-   Memungkinkan pengguna mencari data pasien yang telah terdaftar di SATUSEHAT hanya dengan memasukkan 16 digit NIK.
+1. **Pencarian Pasien** — Cari berdasarkan Identitas (NIK/Nama/Tgl Lahir/JK), Nomor IHS, atau NIK Ibu (Bayi). Hasil pencarian menampilkan data lengkap dan tombol **Update Identitas Pasien**.
 
-2. **Registrasi Pasien Umum (Alur Otomatis Cari → Daftar)**
-   Pendaftaran pasien umum kini mengikuti alur SATUSEHAT terbaru:
+2. **Integrasi SIMGos** — Ambil data pasien dari SIMGos RS berdasarkan No. RM + Tanggal Lahir. Tersedia di tab Cari Pasien, Registrasi Umum, dan Registrasi Bayi dengan auto-fill cerdas.
 
-   * Sistem akan melakukan pencarian pasien berdasarkan NIK terlebih dahulu.
-   * Jika pasien sudah terdaftar, sistem tidak akan mengirimkan permintaan pembuatan pasien (POST), melainkan langsung menampilkan Nomor IHS yang sudah ada beserta notifikasi bahwa pasien telah terdaftar.
-   * Jika pasien belum ditemukan, sistem akan melanjutkan proses pembuatan pasien menggunakan payload minimal sesuai spesifikasi SATUSEHAT.
+3. **Registrasi Pasien Umum** — Alur otomatis: cari berdasarkan NIK → jika sudah terdaftar tampilkan IHS → jika belum, buat pasien baru.
 
-3. **Pendaftaran Pasien Bayi Baru Lahir**
-   Formulir khusus untuk mendaftarkan bayi baru lahir dengan menggunakan referensi NIK Ibu Kandung, urutan kelahiran (jika kembar), serta data wali sesuai standar FHIR SATUSEHAT.
+4. **Registrasi Bayi Baru Lahir** — Formulir khusus menggunakan referensi NIK Ibu Kandung sesuai standar FHIR SATUSEHAT.
 
-4. **Update Data Pasien (PATCH)**
-   Mendukung pembaruan data pasien menggunakan metode HTTP `PATCH` dengan format `JSON Patch`.
+5. **Update Data Pasien (PATCH)** — Perbarui data pasien dengan JSON Patch. Hanya field yang diisi yang dikirim ke SATUSEHAT.
 
-   * Nomor IHS digunakan sebagai identitas target yang wajib diisi.
-   * Pengguna dapat memperbarui data tertentu tanpa harus mengirim ulang seluruh data pasien.
-   * Hanya field yang diisi pada formulir yang akan dikirim ke SATUSEHAT menggunakan operasi `"replace"`.
+6. **Master Data Wilayah** — Cascading dropdown Provinsi → Kab/Kota → Kecamatan → Kelurahan/Desa dengan pencarian TomSelect dan auto-pagination.
 
-5. **Master Data Wilayah (Cascading Dropdowns)**
-   Terintegrasi dengan Master Data Kemkes yang diotomatisasi secara asinkron dari backend. Mendukung pencarian berbasis **Tom Select**, sehingga data Provinsi, Kota/Kabupaten, Kecamatan, dan Kelurahan dapat dipilih dengan mudah beserta kode referensinya. Backend juga menangani proses pagination secara otomatis untuk mendapatkan seluruh data wilayah.
+7. **Kredensial Dinamis & Auto-Token** — Dukungan lingkungan Staging/Production dengan auto-generate token dari `.env`.
 
-6. **Kredensial Dinamis & Auto-Token**
-   Mendukung perpindahan antara lingkungan Staging dan Production. Jika file `.env` tersedia, Access Token akan dihasilkan dan dikelola secara otomatis saat halaman pertama kali dimuat.
-
-7. **Validasi & Integritas Payload FHIR**
-   Mendukung validasi format NIK, RT/RW, nomor telepon, serta memastikan payload yang dikirim mengikuti standar FHIR SATUSEHAT yang berlaku.
-
-8. **Human-Readable Response**
-   Respons dari server SATUSEHAT ditampilkan dalam bentuk antarmuka yang mudah dipahami. Informasi keberhasilan maupun kegagalan dipresentasikan dalam format yang lebih ramah pengguna, termasuk detail diagnostik apabila terjadi kesalahan.
+8. **Human-Readable Response** — Respons API ditampilkan dalam format yang mudah dipahami dengan detail diagnostik jika terjadi kesalahan.
 
 ## Persyaratan Sistem
 
-* PHP 8.1 atau lebih baru
-* Ekstensi PHP:
+- PHP 8.1+
+- Ekstensi PHP: `curl`, `session`
 
-  * `curl`
-  * `session`
+## Cara Menjalankan
 
-## Cara Menjalankan (Local Development)
+1. Clone folder aplikasi ke komputer Anda.
 
-1. Pastikan PHP telah terpasang pada sistem.
+2. Salin `.env.example` menjadi `.env`, isi kredensial:
 
-2. Salin atau clone folder aplikasi ke komputer Anda.
+   ```env
+   # SATUSEHAT
+   STAGING_CLIENT_ID=your_staging_client_id
+   STAGING_CLIENT_SECRET=your_staging_client_secret
+   PRODUCTION_CLIENT_ID=your_production_client_id
+   PRODUCTION_CLIENT_SECRET=your_production_client_secret
 
-3. Salin file `.env.example` menjadi `.env`, kemudian isi kredensial SATUSEHAT yang dimiliki.
-
-4. Buka terminal dan masuk ke direktori aplikasi:
-
-   ```bash
-   cd path/to/satusehat
+   # SIMGos (opsional)
+   URL_SIMGOS=https://simgos-rsud.example.com
+   X_USERNAME=your_simgos_username
+   X_PASSWORD=your_simgos_password
    ```
 
-5. Jalankan web server bawaan PHP:
+3. Jalankan server:
 
    ```bash
    php -S localhost:8000
    ```
 
-6. Buka browser dan akses:
-
-   ```text
-   http://localhost:8000
-   ```
+4. Buka `http://localhost:8000`
 
 ## Cara Penggunaan
 
-1. Jika file `.env` telah dikonfigurasi, sistem akan melakukan proses autentikasi secara otomatis saat halaman dibuka dan memuat daftar provinsi.
+### Tab 1 – Cari Pasien
+> ![alt text](assets/img/cari-pasien.png)
+> - **Manual:** Isi NIK/Nama/Tgl Lahir/JK, klik **Cari Pasien**
+> - **SIMGos:** Klik **Cari Pasien dari SIMGos**, masukkan No. RM + Tanggal Lahir → form terisi otomatis → pencarian SATUSEHAT berjalan otomatis → kartu pasien muncul dengan IHS
+> - Klik **Update Identitas Pasien** pada kartu hasil untuk pindah ke tab Update Data
 
-2. Jika belum menggunakan `.env`, klik menu **Kredensial**, masukkan Client ID dan Client Secret, kemudian klik **Generate Token**.
+### Tab 2 – Registrasi Umum
+> ![alt text](assets/img/register-umum.png)
+> - **SIMGos:** Klik tombol SIMGos → seluruh form terisi otomatis (identitas, demografi, wilayah, kontak)
+> - **Manual:** Lengkapi data, klik **POST Patient Umum**
 
-3. Gunakan fitur melalui tab yang tersedia:
+### Tab 3 – Registrasi Bayi
+> ![alt text](assets/img/register-bayi.png)
+> - **SIMGos:** Klik tombol SIMGos → data bayi terisi otomatis (NIK, Nama, Tgl Lahir, JK, wilayah)
+> - **Manual:** Isi data bayi, klik **POST Patient Bayi**
 
-   ### Tab 1 – Cari Pasien
+### Tab 4 – Update Pasien
+> ![alt text](assets/img/update-pasien.png)
+> - **Otomatis:** Dari hasil pencarian, klik "Update Identitas Pasien" → IHS, Nama, Tgl Lahir, JK terisi
+> - **Manual:** Masukkan IHS + Data Wajib, isi field yang ingin diubah, klik **PATCH Data Pasien**
 
-   * Masukkan 16 digit NIK.
-   * Klik **Cari Pasien**.
-   * Sistem akan menampilkan data pasien beserta Nomor IHS apabila ditemukan.
+## Auto-fill SIMGos
 
-   ### Tab 2 – Registrasi Umum
+| Data | Umum | Bayi |
+|------|------|------|
+| NIK | ✓ | ✓ |
+| Nama | NAMA saja (tanpa Gelar) | "BY NY" + NAMA |
+| Tanggal Lahir | ✓ | ✓ |
+| Jenis Kelamin | ✓ | ✓ |
+| Wilayah (Cascade Kodewilayah) | ✓ | ✓ |
+| RT/RW (Padding 3 digit) | ✓ | ✓ |
+| Status Nikah Mapping deskripsi → S/M/D/W | ✓ | — |
+| Kewarganegaraan | ✓ | ✓ |
+| Kontak | ✓ | ✓ |
 
-   * Lengkapi data pasien.
-   * Klik **POST Patient Umum**.
-   * Sistem akan menjalankan alur otomatis:
-
-     1. Mencari pasien berdasarkan NIK.
-     2. Jika pasien sudah terdaftar, Nomor IHS akan langsung ditampilkan.
-     3. Jika belum terdaftar, sistem akan melakukan pembuatan data pasien baru.
-
-   ### Tab 3 – Registrasi Bayi
-
-   * Isi data kelahiran bayi.
-   * Klik **POST Patient Bayi** untuk mengirim data ke SATUSEHAT.
-
-   ### Tab 4 – Update Pasien
-
-   * Masukkan **Nomor IHS** pasien yang akan diperbarui.
-   * Isi satu atau lebih data yang ingin diubah.
-   * Klik **PATCH Data Pasien**.
-   * Sistem hanya akan mengirim field yang diisi menggunakan mekanisme JSON Patch.
-
-4. Seluruh aktivitas API akan ditampilkan pada **Panel Respons API** di sisi kanan halaman.
+**Keamanan:** Kredensial SIMGos hanya dibaca dari `.env` di sisi server, tidak pernah dikirim via browser.
 
 ## Struktur Direktori
 
 ```text
 satusehat/
-├── api/                               # Endpoint backend yang dipanggil melalui AJAX
+├── api/
 │   ├── clear_session.php
-│   ├── generate_token.php             # Menghasilkan Access Token SATUSEHAT
-│   ├── get_wilayah.php                # Proxy & Aggregator Master Data Wilayah Kemkes
-│   ├── patch_pasien.php               # Endpoint PATCH data pasien
-│   ├── post_pasien_bayi.php           # Membentuk payload pasien bayi
-│   ├── post_pasien_umum.php           # Alur cari pasien → daftar pasien umum
-│   └── search_pasien.php              # GET pasien berdasarkan NIK
-│
+│   ├── generate_token.php
+│   ├── get_wilayah.php
+│   ├── patch_pasien.php
+│   ├── post_pasien_bayi.php
+│   ├── post_pasien_umum.php
+│   ├── search_pasien.php
+│   └── simgos_get_pasien.php      
 ├── assets/
-│   ├── css/
-│   │   └── style.css                  # Styling aplikasi
-│   └── js/
-│       └── main.js                    # AJAX, Tom Select, event handler, parsing respons
-│
+│   ├── css/style.css
+│   ├── img/
+│   |   ├── cari-pasien.png
+│   |   ├── register-bayi.png
+│   |   ├── register-umum.png
+│   |   └── update-pasien.png
+│   └── js/main.js
 ├── includes/
-│   ├── config.php                     # Konfigurasi awal dan parser .env
-│   ├── functions.php                  # Fungsi utilitas
-│   ├── logger.php                     # Logging aplikasi
-│   └── satusehat.php                  # Fungsi integrasi SATUSEHAT (GET, POST, PATCH)
-│
-├── logs/
-│   └── app.log                        # Catatan aktivitas aplikasi
-│
-├── .env.example                       # Template konfigurasi SATUSEHAT
-├── favicon.ico                        # Ikon aplikasi
-├── index.php                          # Halaman utama aplikasi
-└── README.md                          # Dokumentasi aplikasi
+│   ├── config.php
+│   ├── functions.php
+│   ├── logger.php
+│   └── satusehat.php
+├── logs/app.log
+├── .env
+├── .env.example
+├── favicon.ico
+├── favicon.png
+├── index.php
+└── README.md
 ```
 
-## Alur Registrasi Pasien Umum
+## Alur Pencarian Pasien dari SIMGos
 
 ```text
-Input Data Pasien
+No. RM + Tanggal Lahir
         │
         ▼
-Cari Pasien berdasarkan NIK
+SIMGos getToken → getPasien
         │
- ┌──────┴──────┐
- │             │
- ▼             ▼
-Ditemukan   Tidak ditemukan
- │             │
- ▼             ▼
-Tampilkan   POST Create Patient
-Nomor IHS        │
- │               ▼
- └────────► Tampilkan Nomor IHS Baru
-```
-
-## Alur Update Data Pasien
-
-```text
-Input Nomor IHS
-        │
-        ▼
-Isi Field yang Ingin Diubah
-        │
-        ▼
-Bentuk JSON Patch Secara Dinamis
-        │
-        ▼
-PATCH Patient ke SATUSEHAT
-        │
-        ▼
-Tampilkan Respons Berhasil/Gagal
+   ┌────┴────┐
+   ▼         ▼
+Ditemukan  Tidak ditemukan
+   │         │
+   ▼         ▼
+Auto-fill  Error
+   │
+   ▼
+[Cari Pasien] Auto-trigger SATUSEHAT
+   │
+   ▼
+Kartu Pasien (IHS + data lengkap)
+   │
+   ▼
+"Update Identitas Pasien"
+   │
+   ▼
+Tab Update terisi otomatis
 ```
 
 ## Referensi
 
-Implementasi aplikasi ini disusun berdasarkan dokumentasi resmi SATUSEHAT Platform terkait Master Patient Index (MPI).
-
 [SATUSEHAT Platform – Master Patient Index (MPI)](https://satusehat.kemkes.go.id/platform/docs/id/master-data/master-patient-index/preliminary/)
 
-> Seluruh alur pencarian pasien, pembuatan pasien baru, serta pembaruan data pasien diupayakan mengikuti ketentuan yang berlaku pada dokumentasi resmi SATUSEHAT. Dokumentasi tersebut dapat berubah sewaktu-waktu sehingga perlu dilakukan penyesuaian apabila terdapat pembaruan spesifikasi dari Kementerian Kesehatan Republik Indonesia.
+> Spesifikasi SATUSEHAT dapat berubah sewaktu-waktu. Sesuaikan implementasi jika terdapat pembaruan dari Kementerian Kesehatan RI.
