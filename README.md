@@ -2,8 +2,6 @@
 
 Aplikasi berbasis web untuk pencarian, pendaftaran, dan pembaruan data pasien pada platform SATUSEHAT Kementerian Kesehatan RI. Mendukung integrasi dengan **SIMGos** untuk pengambilan data pasien secara otomatis. Dibangun menggunakan PHP Native, HTML5, Bootstrap 5, dan JavaScript murni.
 
-![alt text](assets/img/register-umum.png)
-
 ## Fitur Utama
 
 1. **Pencarian Pasien** — Cari berdasarkan Identitas (NIK/Nama/Tgl Lahir/JK), Nomor IHS, atau NIK Ibu (Bayi). Hasil pencarian menampilkan data lengkap dan tombol **Update Identitas Pasien**.
