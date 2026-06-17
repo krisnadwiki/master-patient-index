@@ -223,7 +223,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                         <div id="simgos-search-wrapper" class="mb-3 d-none">
                             <button type="button"
                                 class="btn btn-simgos fw-medium w-100 py-2 btn-simgos-search-form"
-                                data-form="umum">
+                                data-form="search">
                                 <i class="bi-person-fill-check me-2"></i>Cari Pasien dari SIMGos
                             </button>
                             <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
@@ -481,7 +481,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                         <div id="simgos-search-wrapper-bayi" class="mb-3 d-none">
                             <button type="button"
                                 class="btn btn-simgos fw-medium w-100 py-2 btn-simgos-search-form"
-                                data-form="umum">
+                                data-form="bayi">
                                 <i class="bi-person-fill-check me-2"></i>Cari Pasien dari SIMGos
                             </button>
                             <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
