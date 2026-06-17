@@ -28,6 +28,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
     <!-- TomSelect for searchable dropdowns -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
     <script>
         const envConfig = {
             Staging: { id: "<?= htmlspecialchars($staging_id) ?>", secret: "<?= htmlspecialchars($staging_secret) ?>" },
@@ -220,8 +221,10 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                         </div>
 
                         <div id="simgos-search-wrapper" class="mb-3 d-none">
-                            <button type="button" class="btn btn-outline-ss-primary fw-medium w-100 py-2" id="btn-simgos-search">
-                                <i class="bi bi-hospital me-2"></i>Cari Pasien dari SIMGos
+                            <button type="button"
+                                class="btn btn-simgos fw-medium w-100 py-2 btn-simgos-search-form"
+                                data-form="umum">
+                                <i class="bi-person-fill-check me-2"></i>Cari Pasien dari SIMGos
                             </button>
                             <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
                         </div>
@@ -259,7 +262,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                         <div id="search-fields-bayi" class="row g-3 mb-3 d-none">
                             <div class="col-md-6">
                                 <label for="s_nik_ibu" class="form-label fw-medium">NIK Ibu</label>
-                                <input type="text" class="form-control" id="s_nik_ibu" pattern="\d{16}" maxlength="16" placeholder="Contoh: 1234567890123456" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <input type="text" class="form-control" id="s_nik_ibu" pattern="\d{16}" maxlength="16" placeholder="16 digit angka" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                             <div class="col-md-6">
                                 <label for="s_tgl_bayi" class="form-label fw-medium">Tanggal Lahir Bayi</label>
@@ -286,8 +289,10 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                     <form id="form-umum">
 
                         <div id="simgos-search-wrapper-umum" class="mb-3 d-none">
-                            <button type="button" class="btn btn-outline-ss-primary fw-medium w-100 py-2 btn-simgos-search-form" data-form="umum">
-                                <i class="bi bi-hospital me-2"></i>Cari Pasien dari SIMGos
+                            <button type="button"
+                                class="btn btn-simgos fw-medium w-100 py-2 btn-simgos-search-form"
+                                data-form="umum">
+                                <i class="bi-person-fill-check me-2"></i>Cari Pasien dari SIMGos
                             </button>
                             <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
                         </div>
@@ -304,8 +309,8 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                                         <div class="row g-3 mb-2">
                                             <div class="col-md-6">
                                                 <label for="u_nik" class="form-label fw-medium">NIK <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control rounded-1" id="u_nik" required pattern="\d{16}" maxlength="16" title="NIK harus terdiri dari 16 digit angka" placeholder="Contoh: 1234567890123456" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                                                <div class="form-text">16 digit angka.</div>
+                                                <input type="text" class="form-control rounded-1" id="u_nik" required pattern="\d{16}" maxlength="16" title="NIK harus terdiri dari 16 digit angka" placeholder="16 digit angka" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                                <div class="form-text">Contoh Isi: 1234567890123456</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="u_nama" class="form-label fw-medium">Nama Lengkap <span class="text-danger">*</span></label>
@@ -364,38 +369,39 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                                                 <label for="u_alamat" class="form-label fw-medium">Alamat Lengkap (Sesuai KTP) <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control rounded-1" id="u_alamat" required placeholder="Contoh: JL. Kh. Wakhid Hasyim No. 64, Kota Kediri">
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-6">
+                                                <label for="u_rt" class="form-label fw-medium">RT</label>
+                                                <input type="text" class="form-control rounded-1" id="u_rt" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 001" placeholder="001">
+                                            </div>
+                                            <div class="col-6">
+                                                <label for="u_rw" class="form-label fw-medium">RW</label>
+                                                <input type="text" class="form-control rounded-1" id="u_rw" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 002" placeholder="002">
+                                            </div>
+                                            <div class="col-md-6">
                                                 <label for="u_prov" class="form-label fw-medium">Provinsi</label>
                                                 <select class="form-select rounded-1 wilayah-select" id="u_prov" data-target="u_kota" data-type="cities">
                                                     <option value="">Pilih Provinsi...</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-md-6">
                                                 <label for="u_kota" class="form-label fw-medium">Kab/Kota</label>
                                                 <select class="form-select rounded-1 wilayah-select" id="u_kota" data-target="u_kec" data-type="districts" disabled>
                                                     <option value="">Pilih Kab/Kota...</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-md-6">
                                                 <label for="u_kec" class="form-label fw-medium">Kecamatan</label>
                                                 <select class="form-select rounded-1 wilayah-select" id="u_kec" data-target="u_desa" data-type="sub-districts" disabled>
                                                     <option value="">Pilih Kecamatan...</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-md-6">
                                                 <label for="u_desa" class="form-label fw-medium">Kelurahan/Desa</label>
                                                 <select class="form-select rounded-1" id="u_desa" disabled>
                                                     <option value="">Pilih Kel/Desa...</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 col-6">
-                                                <label for="u_rt" class="form-label fw-medium">RT</label>
-                                                <input type="text" class="form-control rounded-1" id="u_rt" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 001" placeholder="001">
-                                            </div>
-                                            <div class="col-md-3 col-6">
-                                                <label for="u_rw" class="form-label fw-medium">RW</label>
-                                                <input type="text" class="form-control rounded-1" id="u_rw" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 002" placeholder="002">
-                                            </div>
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -431,7 +437,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="u_kk" class="form-label fw-medium">Nomor Kartu Keluarga</label>
-                                                <input type="text" class="form-control rounded-1" id="u_kk" pattern="\d{16}" maxlength="16" title="KK harus terdiri dari 16 digit angka" placeholder="Contoh: 1234567890123456" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                                <input type="text" class="form-control rounded-1" id="u_kk" pattern="\d{16}" maxlength="16" title="KK harus terdiri dari 16 digit angka" placeholder="16 digit angka" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                             </div>
                                         </div>
 
@@ -473,8 +479,10 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                     <form id="form-bayi">
 
                         <div id="simgos-search-wrapper-bayi" class="mb-3 d-none">
-                            <button type="button" class="btn btn-outline-ss-primary fw-medium w-100 py-2 btn-simgos-search-form" data-form="bayi">
-                                <i class="bi bi-hospital me-2"></i>Cari Pasien dari SIMGos
+                            <button type="button"
+                                class="btn btn-simgos fw-medium w-100 py-2 btn-simgos-search-form"
+                                data-form="umum">
+                                <i class="bi-person-fill-check me-2"></i>Cari Pasien dari SIMGos
                             </button>
                             <div class="form-text text-center mt-1">Ambil data pasien dari SIMGos berdasarkan No. RM</div>
                         </div>
@@ -491,12 +499,12 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                                         <div class="row g-3 mb-2">
                                             <div class="col-md-6">
                                                 <label for="b_nik_ibu" class="form-label fw-medium">NIK Ibu Kandung <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control rounded-1" id="b_nik_ibu" required pattern="\d{16}" maxlength="16" title="NIK harus terdiri dari 16 digit angka" placeholder="Contoh: 1234567890123456" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                                <input type="text" class="form-control rounded-1" id="b_nik_ibu" required pattern="\d{16}" maxlength="16" title="NIK harus terdiri dari 16 digit angka" placeholder="16 digit angka" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                                 <div class="form-text">Sangat penting untuk referensi relasi.</div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="b_nik_anak" class="form-label fw-medium">NIK Bayi (Opsional)</label>
-                                                <input type="text" class="form-control rounded-1" id="b_nik_anak" pattern="\d{16}" maxlength="16" title="NIK harus terdiri dari 16 digit angka" placeholder="Contoh: 1234567890123456" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                                <input type="text" class="form-control rounded-1" id="b_nik_anak" pattern="\d{16}" maxlength="16" title="NIK harus terdiri dari 16 digit angka" placeholder="16 digit angka" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                             </div>
                                             <div class="col-md-8">
                                                 <label for="b_nama_anak" class="form-label fw-medium">Nama Bayi <span class="text-danger">*</span></label>
@@ -557,37 +565,37 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                                                 <label for="b_alamat" class="form-label fw-medium">Alamat Lengkap (Sesuai KTP) <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control rounded-1" id="b_alamat" required placeholder="Contoh: JL. Kh. Wakhid Hasyim No. 64, Kota Kediri">
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-md-6">
+                                                <label for="b_rt" class="form-label fw-medium">RT</label>
+                                                <input type="text" class="form-control rounded-1" id="b_rt" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 001" placeholder="001">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="b_rw" class="form-label fw-medium">RW</label>
+                                                <input type="text" class="form-control rounded-1" id="b_rw" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 002" placeholder="002">
+                                            </div>
+                                            <div class="col-md-6">
                                                 <label for="b_prov" class="form-label fw-medium">Provinsi</label>
                                                 <select class="form-select rounded-1 wilayah-select" id="b_prov" data-target="b_kota" data-type="cities">
                                                     <option value="">Pilih Provinsi...</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-md-6">
                                                 <label for="b_kota" class="form-label fw-medium">Kab/Kota</label>
                                                 <select class="form-select rounded-1 wilayah-select" id="b_kota" data-target="b_kec" data-type="districts" disabled>
                                                     <option value="">Pilih Kab/Kota...</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-md-6">
                                                 <label for="b_kec" class="form-label fw-medium">Kecamatan</label>
                                                 <select class="form-select rounded-1 wilayah-select" id="b_kec" data-target="b_desa" data-type="sub-districts" disabled>
                                                     <option value="">Pilih Kecamatan...</option>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3 col-6">
+                                            <div class="col-md-6">
                                                 <label for="b_desa" class="form-label fw-medium">Kelurahan/Desa</label>
                                                 <select class="form-select rounded-1" id="b_desa" disabled>
                                                     <option value="">Pilih Kel/Desa...</option>
                                                 </select>
-                                            </div>
-                                            <div class="col-md-3 col-6">
-                                                <label for="b_rt" class="form-label fw-medium">RT</label>
-                                                <input type="text" class="form-control rounded-1" id="b_rt" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 001" placeholder="001">
-                                            </div>
-                                            <div class="col-md-3 col-6">
-                                                <label for="b_rw" class="form-label fw-medium">RW</label>
-                                                <input type="text" class="form-control rounded-1" id="b_rw" pattern="\d{3}" maxlength="3" title="Harus 3 digit angka, contoh: 002" placeholder="002">
                                             </div>
                                         </div>
                                     </div>
@@ -681,7 +689,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-6">
                                         <label for="p_nik" class="form-label fw-medium">NIK Baru</label>
-                                        <input type="text" class="form-control rounded-1" id="p_nik" pattern="\d{16}" maxlength="16" placeholder="Contoh: 1234567890123456" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                        <input type="text" class="form-control rounded-1" id="p_nik" pattern="\d{16}" maxlength="16" placeholder="16 digit angka" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                                     </div>
                                     <div class="col-md-6">
                                         <label for="p_nama" class="form-label fw-medium">Nama Lengkap Baru</label>
@@ -816,7 +824,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
         <div class="modal-content rounded-1 border-0 shadow">
             <div class="modal-header bg-ss-primary text-white rounded-0">
                 <h5 class="modal-title fw-semibold" id="simgosSearchModalLabel">
-                    <i class="bi bi-hospital me-2"></i><span id="simgos-modal-title">Cari Pasien dari SIMGos</span>
+                    <i class="bi-person-fill-check me-2"></i><span id="simgos-modal-title">Cari Pasien dari SIMGos</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -837,9 +845,6 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                 </div>
             </div>
             <div class="modal-footer">
-                <!-- <button type="button" class="btn btn-outline-secondary rounded-1" id="btn-simgos-reset">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
-                </button> -->
                 <button type="button" class="btn btn-light rounded-1" data-bs-dismiss="modal">Batal</button>
                 <button type="button" class="btn btn-ss-primary rounded-1 fw-medium px-4" id="btn-simgos-search-action">
                     <i class="bi bi-search me-1"></i>Cari
@@ -879,6 +884,7 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
 <script src="assets/js/main.js"></script>
 </body>
 </html>

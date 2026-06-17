@@ -6,6 +6,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const responseOverlay = document.getElementById('response-overlay');
     const toastContainer = document.querySelector('.toast-container');
 
+    // --- Flatpickr: Force DD/MM/YYYY display on all date inputs ---
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr('input[type="date"]', {
+            altInput: true,
+            altFormat: 'd/m/Y',
+            dateFormat: 'Y-m-d',
+            maxDate: 'today',
+            allowInput: true,
+            locale: {
+                firstDayOfWeek: 1
+            }
+        });
+    }
+
+    // Helper: set date value (works with both native & flatpickr inputs)
+    function setDateValue(el, dateStr) {
+        if (!el || !dateStr) return;
+        if (el._flatpickr) {
+            el._flatpickr.setDate(dateStr, true); // true = trigger onChange
+        } else {
+            el.value = dateStr;
+        }
+    }
+
     // --- Toast Notification Logic ---
     function showToast(type, message) {
         let bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
@@ -294,8 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="alert alert-light border mb-3 p-3" id="simgos-action-panel">
                 <h6 class="fw-bold text-ss-primary mb-2" style="font-size: 0.85rem;"><i class="bi bi-link-45deg me-1"></i>Update Patient ke SIMGos</h6>
                 <div class="d-flex gap-2">
-                    <a href="${simgosIhsHref}" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill" id="btn-simgos-ihs">Update by IHS</a>
-                    <a href="${simgosNikHref || '#'}" target="_blank" class="btn btn-outline-ss-primary fw-medium btn-sm flex-fill ${simgosNikHref ? '' : 'disabled'}" id="btn-simgos-nik">Update by NIK</a>
+                    <a href="${simgosIhsHref}" target="_blank" class="btn btn-ss-primary fw-medium btn-sm flex-fill" id="btn-simgos-ihs">Update by IHS</a>
+                    <a href="${simgosNikHref || '#'}" target="_blank" class="btn btn-ss-primary fw-medium btn-sm flex-fill ${simgosNikHref ? '' : 'disabled'}" id="btn-simgos-nik">Update by NIK</a>
                 </div>
             </div>
         ` : '';
@@ -890,7 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (pIhs)  pIhs.value = ihs;
         if (pNama) pNama.value = nama;
-        if (pTgl)  pTgl.value = tgl;
+        if (pTgl)  setDateValue(pTgl, tgl);
         if (pJk)   pJk.value = jk;
 
         // Switch to Update tab
@@ -915,8 +939,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const simgosContextTitles = {
         search: 'Cari Pasien dari SIMGos',
-        umum: 'Ambil Data Registrasi Umum dari SIMGos',
-        bayi: 'Ambil Data Registrasi Bayi dari SIMGos'
+        umum: 'Cari Pasien dari SIMGos',
+        bayi: 'Cari Pasien Bayi dari SIMGos'
     };
 
     if (simgosSearchModalEl) {
@@ -1083,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Identity fields — Nama uses NAMA only (no Gelar Depan/Belakang)
         if (nik) document.getElementById('u_nik').value = nik;
         if (nama) document.getElementById('u_nama').value = nama;
-        if (tgl) document.getElementById('u_tgl').value = tgl;
+        if (tgl) setDateValue(document.getElementById('u_tgl'), tgl);
         if (tempatLahir) document.getElementById('u_tempat').value = tempatLahir;
         setSelectByText(document.getElementById('u_jk'), jkDesc);
         if (wnCode === '71' || wnCode === '1') document.getElementById('u_wn').value = 'WNI';
@@ -1131,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Identity fields (NIK Ibu NOT filled — not available in SIMGos response)
         if (nik) document.getElementById('b_nik_anak').value = nik;
         if (namaBayi) document.getElementById('b_nama_anak').value = namaBayi;
-        if (tgl) document.getElementById('b_tgl').value = tgl;
+        if (tgl) setDateValue(document.getElementById('b_tgl'), tgl);
         if (tempatLahir) document.getElementById('b_tempat').value = tempatLahir;
         setSelectByText(document.getElementById('b_jk'), jkDesc);
         if (wnCode === '71' || wnCode === '1') document.getElementById('b_wn').value = 'WNI';
@@ -1211,7 +1235,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Search tab: fill search form fields
                         if (p.nik) document.getElementById('s_nik').value = p.nik;
                         if (p.nama) document.getElementById('s_nama').value = p.nama;
-                        if (p.tgl_lahir) document.getElementById('s_tgl').value = p.tgl_lahir;
+                        if (p.tgl_lahir) setDateValue(document.getElementById('s_tgl'), p.tgl_lahir);
                         if (p.jk) document.getElementById('s_jk').value = p.jk;
                     }
 

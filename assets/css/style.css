@@ -59,20 +59,47 @@ body {
     color: var(--ss-primary);
     border: 1px solid var(--ss-primary);
     background-color: #fff;
+    font-weight: 400;
     transition: all 0.2s ease;
 }
 
-.btn-outline-ss-primary:hover,
-.btn-outline-ss-primary:focus {
+/* Hover */
+.btn-check:not(:checked) + .btn-outline-ss-primary:hover {
     color: var(--ss-primary);
-    background-color: rgba(37, 99, 235, 0.08);
+    background-color: rgba(0, 143, 129, 0.12);
     border-color: var(--ss-primary);
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 143, 129, 0.15);
 }
 
-.btn-outline-ss-primary:hover i,
-.btn-outline-ss-primary:focus i {
-    color: inherit;
+/* Selected */
+.btn-check:checked + .btn-outline-ss-primary {
+    color: #fff;
+    background-color: rgba(0, 143, 129, 0.637);
+    border-color: transparent;
+    font-weight: 700;
+    box-shadow: none;
+}
+
+/* Selected + Hover */
+.btn-check:checked + .btn-outline-ss-primary:hover {
+    color: #fff;
+    background-color: rgba(0, 65, 58, 0.75);
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(0, 143, 129, 0.2);
+}
+
+.btn-simgos {
+    background: rgba(25, 197, 191, 0.10);
+    border: 1px solid rgba(25, 197, 191, 0.25);
+    color: var(--ss-primary);
+    transition: all 0.2s ease;
+}
+
+.btn-simgos:hover {
+    background: rgba(25, 197, 191, 0.25);
+    border-color: rgba(25, 197, 191, 0.45);
+    color: var(--ss-primary);
+    box-shadow: 0 2px 8px rgba(25, 197, 191, 0.15);
 }
 
 /* Form Styling */
