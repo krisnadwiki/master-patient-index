@@ -767,6 +767,104 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Cek Pasien di SATUSEHAT (from Umum / Bayi form) ---
+    document.querySelectorAll('.btn-check-satusehat').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const formType = btn.dataset.form;
+            const env = document.querySelector('input[name="env_var"]:checked').value;
+
+            let endpoint = '';
+            const formData = new URLSearchParams();
+            formData.append('csrf_token', csrfToken);
+
+            if (formType === 'umum') {
+                const nik  = document.getElementById('u_nik').value.trim();
+                const nama = document.getElementById('u_nama').value.trim();
+                const tgl  = document.getElementById('u_tgl').value.trim();
+                const jk   = document.getElementById('u_jk').value;
+
+                if (!nik && (!nama || !tgl || !jk)) {
+                    showToast('error', 'Isi NIK atau lengkapi Nama, Tanggal Lahir, dan Jenis Kelamin untuk mencari pasien.');
+                    return;
+                }
+
+                formData.append('type', 'identitas');
+                formData.append('s_nik', nik);
+                formData.append('s_nama', nama);
+                formData.append('s_tgl', tgl);
+                formData.append('s_jk', jk);
+
+                const params = [];
+                if (nik)  params.push(`identifier=https://fhir.kemkes.go.id/id/nik|${nik}`);
+                if (nama) params.push(`name=${encodeURIComponent(nama)}`);
+                if (tgl)  params.push(`birthdate=${tgl}`);
+                if (jk)   params.push(`gender=${jk === 'Laki-laki' ? 'male' : 'female'}`);
+                endpoint = `/fhir-r4/v1/Patient?${params.join('&')}`;
+
+            } else if (formType === 'bayi') {
+                const nikIbu = document.getElementById('b_nik_ibu').value.trim();
+                const tgl    = document.getElementById('b_tgl').value.trim();
+
+                if (!nikIbu) {
+                    showToast('error', 'NIK Ibu Kandung wajib diisi untuk mencari bayi.');
+                    return;
+                }
+
+                formData.append('type', 'bayi');
+                formData.append('s_nik_ibu', nikIbu);
+                formData.append('s_tgl_bayi', tgl);
+
+                endpoint = `/fhir-r4/v1/Patient?identifier=https://fhir.kemkes.go.id/id/nik-ibu|${nikIbu}`;
+                if (tgl) endpoint += `&birthdate=${tgl}`;
+            }
+
+            const reqData = { type: 'Cari Pasien', env: env, endpoint: endpoint };
+            const originalHtml = btn.innerHTML;
+
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Mencari...';
+            btn.disabled = true;
+            responseOverlay.classList.remove('d-none');
+            responseOverlay.classList.add('d-flex');
+
+            try {
+                const response = await fetch('api/search_pasien.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    renderResponse(reqData, {
+                        isSuccess: true,
+                        httpCode: response.status,
+                        message: 'Success',
+                        raw: data
+                    });
+                } else {
+                    renderResponse(reqData, {
+                        isSuccess: false,
+                        httpCode: response.status,
+                        message: data.error || 'Terjadi kesalahan.',
+                        raw: data
+                    });
+                }
+            } catch (error) {
+                renderResponse(reqData, {
+                    isSuccess: false,
+                    httpCode: 0,
+                    message: error.message,
+                    raw: { error: error.message }
+                });
+            } finally {
+                responseOverlay.classList.remove('d-flex');
+                responseOverlay.classList.add('d-none');
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
+    });
+
     // --- Master Data Wilayah Logic ---
     async function fetchWilayah(type, parentCode = '') {
         const url = `api/get_wilayah.php?type=${type}&parent=${parentCode}`;

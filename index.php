@@ -466,9 +466,12 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top gap-3">
                             <button type="button" class="btn btn-ss-primary fw-medium px-5 py-2 rounded-1 btn-post">
                                 <i class="bi bi-send-fill me-1"></i>POST Patient Umum
+                            </button>
+                            <button type="button" class="btn btn-outline-ss-primary border fw-medium px-5 py-2 rounded-1 btn-check-satusehat" data-form="umum">
+                                <i class="bi bi-search me-1"></i>Cek Pasien di SATUSEHAT
                             </button>
                         </div>
                     </form>
@@ -633,9 +636,12 @@ $has_simgos_creds = (!empty($url_simgos) && !empty($x_username) && !empty($x_pas
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top gap-3">
                             <button type="button" class="btn btn-ss-primary fw-medium px-5 py-2 rounded-1 btn-post">
                                 <i class="bi bi-send-fill me-1"></i>POST Patient Bayi
+                            </button>
+                            <button type="button" class="btn btn-outline-ss-primary border fw-medium px-5 py-2 rounded-1 btn-check-satusehat" data-form="bayi">
+                                <i class="bi bi-search me-1"></i>Cek Bayi di SATUSEHAT
                             </button>
                         </div>
                     </form>
